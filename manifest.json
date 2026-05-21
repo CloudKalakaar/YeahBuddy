@@ -2,7 +2,7 @@
   "name": "YeahBuddy! Fitness",
   "short_name": "YeahBuddy!",
   "description": "Sleek gym workout planner and exercise library.",
-  "start_url": "/index.html",
+  "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#0a0a0a",
   "theme_color": "#39ff14",

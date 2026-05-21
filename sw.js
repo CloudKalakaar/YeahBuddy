@@ -1,13 +1,13 @@
 const CACHE_NAME = 'yeahbuddy-v1';
 const ASSETS_TO_CACHE = [
-  '/',
-  '/index.html',
-  '/css/style.css',
-  '/js/app.js',
-  '/manifest.json',
-  '/icons/icon-192x192.png',
-  '/icons/icon-512x512.png',
-  '/js/exercises.json'
+  './',
+  './index.html',
+  './css/style.css',
+  './js/app.js',
+  './js/exercises.js',
+  './manifest.json',
+  './icons/icon-192x192.png',
+  './icons/icon-512x512.png'
 ];
 
 self.addEventListener('install', (event) => {
