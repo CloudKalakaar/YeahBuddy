@@ -5,6 +5,26 @@ const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const EXERCISE_IMG_BASE_URL = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
 const PLACEHOLDER_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Crect width='100%25' height='100%25' fill='%23252525' rx='8'/%3E%3Cpath d='M20 30h20M25 24v12M35 24v12' stroke='%2339ff14' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E";
 
+const STAPLE_EXERCISES_ORDER = [
+  // Back (mix of vertical pull, horizontal row, lower back, pullovers)
+  'Lat Pulldown', 'Wide-Grip Lat Pulldown', 'Close-Grip Cable Lat Pulldown',
+  'Barbell Bent-Over Row', 'Seated Cable Row', 'Single-Arm Dumbbell Row', 'T-Bar Row', 'Meadow Row', 'Pendlay Row',
+  'Rack Pull', 'Barbell Deadlift', 'Deadlift', 'Straight-Arm Cable Pushdown',
+  // Chest (mix of flat press, incline press, flyes/isolation, decline/dips)
+  'Barbell Bench Press', 'Dumbbell Bench Press', 'Incline Barbell Bench Press', 'Incline Dumbbell Bench Press',
+  'Decline Barbell Bench Press', 'Flat Dumbbell Flyes', 'Incline Dumbbell Flyes', 'Cable Crossover', 'High to Low Cable Fly', 'Pec Deck Fly', 'Machine Chest Press',
+  // Legs (mix of quad compound, hamstrings, unilateral, calves)
+  'Barbell Back Squat', 'Barbell Front Squat', 'Leg Press', 'Bulgarian Split Squat', 'Dumbbell Lunge',
+  'Leg Extension', 'Lying Leg Curl', 'Dumbbell Romanian Deadlift', 'Romanian Deadlift', 'Standing Calf Raise',
+  // Shoulders (mix of overhead press, lateral raise, rear delt, front raise)
+  'Overhead Barbell Press', 'Seated Dumbbell Shoulder Press', 'Dumbbell Lateral Raise', 'Cable Lateral Raise',
+  'Rear Delt Cable Fly', 'Dumbbell Rear Delt Fly', 'Face Pull', 'Barbell Front Raise', 'Barbell Shrug', 'Dumbbell Shrug',
+  // Biceps (mix of heavy curl, hammer curl, preacher/incline curl)
+  'Barbell Bicep Curl', 'EZ-Bar Bicep Curl', 'Dumbbell Hammer Curl', 'Dumbbell Preacher Curl', 'Cable Bicep Curl', 'Concentration Curl',
+  // Triceps (mix of cable pushdown, overhead extension, heavy press/skullcrushers)
+  'Triceps Cable Pushdown', 'Cable Rope Triceps Extension', 'Skull Crushers', 'Overhead Dumbbell Triceps Extension', 'Dumbbell Kickbacks', 'Machine Triceps Dip'
+];
+
 // State
 let exerciseDB = [];
 let userData = JSON.parse(localStorage.getItem('yeahbuddy_userData')) || null;
@@ -311,7 +331,6 @@ async function handleSplitSubmit(e) {
       totalExCount += count;
       
       let allowedNames = getAllowedExercisesForChip(target, excludeBW);
-      allowedNames = allowedNames.sort(() => 0.5 - Math.random()).slice(0, 35);
       const allowedStr = allowedNames.length > 0 
         ? `MUST CHOOSE ONLY FROM: [${allowedNames.join(', ')}]` 
         : 'No specific exercises available.';
@@ -382,6 +401,13 @@ async function generatePlan(data, promptsPerDay) {
     5. CRITICAL BODYWEIGHT RULE: If "EXCLUDE BODYWEIGHT EXERCISES: YES" is specified for a day, you MUST NOT select any bodyweight or body-only exercises (such as push-ups, dips with body weight, crunches without weights, bodyweight squats, etc.). Pick weighted or machine/cable exercises exclusively.
     6. CRITICAL TRUTH: You must ONLY output exercise names from the 'MUST CHOOSE ONLY FROM' candidate lists provided for each target. Do not invent names or include exercises for unrequested muscle groups.
     7. Avoid exercises that aggravate ${data['user-injuries']}.
+    8. CRITICAL MOVEMENT DIVERSITY MANDATE: You MUST provide a balanced mix of sub-categories for each muscle target and strictly enforce maximum limits on repetitive exercise types!
+       - For 'Back': Pick AT MOST 2 horizontal rows (e.g. Barbell Bent-Over Row, Seated Cable Row, T-Bar Row). The remaining Back exercises MUST come from vertical pulls (e.g. Lat Pulldown, Wide-Grip Lat Pulldown), lower back / posterior chain (e.g. Rack Pull, Barbell Deadlift), and pullovers (e.g. Straight-Arm Cable Pushdown). NEVER return only rows!
+       - For 'Chest': Pick AT MOST 2 flat bench presses. The remaining Chest exercises MUST come from incline presses (e.g. Incline Barbell Bench Press, Incline Dumbbell Bench Press), flyes/isolation (e.g. Cable Crossover, Pec Deck Fly, Flat Dumbbell Flyes), and decline/machine press.
+       - For 'Legs': Pick AT MOST 2 quad squats. The remaining Leg exercises MUST come from hamstrings (e.g. Lying Leg Curl, Dumbbell Romanian Deadlift), unilateral (e.g. Bulgarian Split Squat, Dumbbell Lunge), and calves (e.g. Standing Calf Raise).
+       - For 'Shoulders': Pick AT MOST 1 overhead press. The remaining Shoulder exercises MUST come from lateral raises (e.g. Dumbbell Lateral Raise, Cable Lateral Raise), rear delts (e.g. Face Pull, Rear Delt Cable Fly), and shrugs/front raises.
+       - For 'Triceps': Combine 1 cable pushdown, 1 overhead extension, 1 skull crusher/compound press, and 1 dip/kickback.
+       - For 'Biceps': Combine 1 heavy barbell/dumbbell curl, 1 hammer curl (neutral grip), 1 preacher/incline curl, and 1 concentration curl.
   `;
 
   const response = await fetch(GROQ_API_URL, {
@@ -471,7 +497,14 @@ function getAllowedExercisesForChip(chip, excludeBodyweight = false) {
     return isMuscleAllowed || isCardioAllowed;
   }).map(ex => ex.name);
 
-  return [...new Set(allowedExercises)];
+  const uniqueNames = [...new Set(allowedExercises)];
+
+  // Separate staple exercises to guarantee they are included in candidate list sent to AI
+  const staples = uniqueNames.filter(name => STAPLE_EXERCISES_ORDER.includes(name));
+  const others = uniqueNames.filter(name => !STAPLE_EXERCISES_ORDER.includes(name));
+
+  const shuffledOthers = others.sort(() => 0.5 - Math.random());
+  return [...staples, ...shuffledOthers].slice(0, 45);
 }
 
 
