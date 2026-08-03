@@ -66,11 +66,22 @@ async function initApp() {
 
   // Inject Template Questions
   const tmpl = document.getElementById('profile-questions-template');
-  document.getElementById('onboarding-questions-container').appendChild(tmpl.content.cloneNode(true));
-  document.getElementById('settings-questions-container').appendChild(tmpl.content.cloneNode(true));
+  if (tmpl) {
+    const onboardingContainer = document.getElementById('onboarding-questions-container');
+    const settingsContainer = document.getElementById('settings-questions-container');
+    if (onboardingContainer && onboardingContainer.children.length === 0) {
+      onboardingContainer.appendChild(tmpl.content.cloneNode(true));
+    }
+    if (settingsContainer && settingsContainer.children.length === 0) {
+      settingsContainer.appendChild(tmpl.content.cloneNode(true));
+    }
+  }
 
   // Build Split UI
   buildSplitUI();
+
+  // Setup Listeners
+  setupEventListeners();
 
   if (userData && weeklyPlan) {
     // Re-hydrate exercise details to ensure compatibility with updated exerciseDB
@@ -87,8 +98,6 @@ async function initApp() {
   } else {
     showScreen('onboarding');
   }
-
-  setupEventListeners();
 }
 
 function showScreen(screenName) {
@@ -268,11 +277,23 @@ function setupEventListeners() {
   // Dashboard Tabs
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.addEventListener('click', (e) => {
+      const tabBtn = e.currentTarget;
+      const tabId = tabBtn.dataset.tab;
+
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.style.display = 'none');
       
-      e.target.classList.add('active');
-      document.getElementById(e.target.dataset.tab).style.display = 'block';
+      tabBtn.classList.add('active');
+      const targetContent = document.getElementById(tabId);
+      if (targetContent) {
+        targetContent.style.display = 'block';
+      }
+
+      if (tabId === 'tab-library') {
+        renderLibrary();
+      } else if (tabId === 'tab-settings' && userData) {
+        populateForm(forms.settings, userData);
+      }
     });
   });
 
