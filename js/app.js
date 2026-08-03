@@ -53,6 +53,11 @@ async function initApp() {
   buildSplitUI();
 
   if (userData && weeklyPlan) {
+    // Re-hydrate exercise details to ensure compatibility with updated exerciseDB
+    weeklyPlan.forEach(day => {
+      const exercisesList = day.exercises || [];
+      day.exerciseDetails = exercisesList.map(exName => findExerciseInDB(exName) || { name: exName, notFound: true });
+    });
     populateForm(forms.settings, userData);
     showScreen('dashboard');
     renderDashboard();
@@ -602,9 +607,6 @@ function openExerciseModal(ex) {
   } else {
     instrContainer.innerHTML = '<p>No instructions available.</p>';
   }
-  
-  document.getElementById('exercise-modal').classList.add('active');
-}
   
   document.getElementById('exercise-modal').classList.add('active');
 }
