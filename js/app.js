@@ -77,8 +77,13 @@ function buildSplitUI() {
   container.innerHTML = '';
   for(let i=1; i<=7; i++) {
     const dayDiv = document.createElement('div');
-    dayDiv.style.marginBottom = '20px';
-    dayDiv.innerHTML = `<label style="display:block; margin-bottom:10px;">Day ${i} Targets</label>`;
+    dayDiv.className = 'day-config-card';
+    
+    dayDiv.innerHTML = `
+      <div class="day-config-header">
+        <div class="day-config-title">Day ${i} Targets</div>
+      </div>
+    `;
     
     const chipContainer = document.createElement('div');
     chipContainer.className = 'chip-container';
@@ -88,6 +93,7 @@ function buildSplitUI() {
       const chip = document.createElement('div');
       chip.className = 'chip';
       chip.innerText = opt;
+      chip.dataset.target = opt;
       chip.addEventListener('click', () => {
         if (opt === 'Rest') {
           Array.from(chipContainer.children).forEach(c => c.classList.remove('active'));
@@ -96,24 +102,97 @@ function buildSplitUI() {
           Array.from(chipContainer.children).find(c => c.innerText === 'Rest')?.classList.remove('active');
           chip.classList.toggle('active');
         }
+        updateDayCountsUI(i);
       });
       chipContainer.appendChild(chip);
     });
     
     // Default selection
     chipContainer.children[chipContainer.children.length-1].classList.add('active'); // Default to Rest
-
     dayDiv.appendChild(chipContainer);
     
-    // Add exercise count input
-    const countDiv = document.createElement('div');
-    countDiv.style.marginTop = '10px';
-    countDiv.innerHTML = `<label style="font-size: 13px; color: var(--text-secondary); margin-right: 10px;">Number of exercises:</label>
-                          <input type="number" id="day-${i}-count" value="5" min="1" max="15" style="width: 60px; padding: 4px; border-radius: 4px; border: 1px solid var(--surface-light); background: var(--bg-color); color: white;">`;
-    dayDiv.appendChild(countDiv);
+    // Add Exclude Bodyweight Toggle Pill Switch
+    const bwDiv = document.createElement('div');
+    bwDiv.className = 'exclude-bw-container';
+    bwDiv.innerHTML = `
+      <label class="custom-toggle-pill">
+        <input type="checkbox" id="day-${i}-exclude-bw" class="toggle-input">
+        <span class="toggle-slider"></span>
+        <span class="toggle-label">Exclude Bodyweight Exercises</span>
+      </label>
+    `;
+    dayDiv.appendChild(bwDiv);
+
+    // Target counts container
+    const countsDiv = document.createElement('div');
+    countsDiv.className = 'target-counts-container';
+    countsDiv.id = `day-${i}-counts-container`;
+    dayDiv.appendChild(countsDiv);
 
     container.appendChild(dayDiv);
+    
+    // Initial counts UI update for default state (Rest)
+    updateDayCountsUI(i);
   }
+}
+
+function updateDayCountsUI(dayIndex) {
+  const chipContainer = document.getElementById(`day-${dayIndex}-chips`);
+  const countsContainer = document.getElementById(`day-${dayIndex}-counts-container`);
+  if (!chipContainer || !countsContainer) return;
+
+  const activeChips = Array.from(chipContainer.querySelectorAll('.chip.active')).map(c => c.dataset.target || c.innerText);
+  
+  if (activeChips.length === 0 || activeChips.includes('Rest')) {
+    countsContainer.innerHTML = `<div class="target-count-notice">Rest day — No exercises needed</div>`;
+    return;
+  }
+
+  // Preserve typed input values
+  const existingValues = {};
+  countsContainer.querySelectorAll('input[data-target]').forEach(input => {
+    existingValues[input.dataset.target] = input.value;
+  });
+
+  countsContainer.innerHTML = '';
+
+  activeChips.forEach(target => {
+    const safeTarget = target.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    const defaultVal = parseInt(existingValues[target]) || 5;
+    const inputId = `day-${dayIndex}-count-${safeTarget}`;
+    
+    const row = document.createElement('div');
+    row.className = 'target-count-row';
+    
+    row.innerHTML = `
+      <label for="${inputId}">${target} Exercises:</label>
+      <div class="custom-stepper">
+        <button type="button" class="stepper-btn btn-minus" aria-label="Decrease exercise count">−</button>
+        <input type="number" id="${inputId}" data-target="${target}" value="${defaultVal}" min="1" max="15" readonly>
+        <button type="button" class="stepper-btn btn-plus" aria-label="Increase exercise count">+</button>
+      </div>
+    `;
+
+    const inputEl = row.querySelector('input');
+    const minusBtn = row.querySelector('.btn-minus');
+    const plusBtn = row.querySelector('.btn-plus');
+
+    minusBtn.addEventListener('click', () => {
+      let val = parseInt(inputEl.value) || 5;
+      if (val > 1) {
+        inputEl.value = val - 1;
+      }
+    });
+
+    plusBtn.addEventListener('click', () => {
+      let val = parseInt(inputEl.value) || 5;
+      if (val < 15) {
+        inputEl.value = val + 1;
+      }
+    });
+
+    countsContainer.appendChild(row);
+  });
 }
 
 // Event Listeners
@@ -204,20 +283,38 @@ function handleSettingsSubmit(e) {
 async function handleSplitSubmit(e) {
   e.preventDefault();
   
-  // Collect active chips and exercise count
-  const splits = [];
   const promptsPerDay = [];
+  
   for(let i=1; i<=7; i++) {
-    const activeChips = Array.from(document.querySelectorAll(`#day-${i}-chips .active`)).map(c => c.innerText);
-    if(activeChips.length === 0) activeChips.push('Rest');
-    const count = document.getElementById(`day-${i}-count`).value;
+    const chipContainer = document.getElementById(`day-${i}-chips`);
+    const activeChips = Array.from(chipContainer.querySelectorAll('.chip.active')).map(c => c.dataset.target || c.innerText);
+    const excludeBW = document.getElementById(`day-${i}-exclude-bw`).checked;
     
-    let allowedNames = getAllowedExercisesForChips(activeChips);
-    allowedNames = allowedNames.sort(() => 0.5 - Math.random()).slice(0, 60);
-    const allowedStr = allowedNames.length > 0 ? `CHOOSE ONLY FROM: [${allowedNames.join(', ')}]` : 'No exercises needed (Rest).';
+    if (activeChips.length === 0 || activeChips.includes('Rest')) {
+      promptsPerDay.push(`Day ${i}: REST DAY. No exercises needed.`);
+      continue;
+    }
+
+    let daySummaryParts = [];
+    let totalExCount = 0;
     
-    promptsPerDay.push(`Day ${i}: Targets: [${activeChips.join(', ')}], Number of Exercises: ${count}. ${allowedStr}`);
-    splits.push(`Targets: [${activeChips.join(', ')}], Number of Exercises: ${count}`);
+    activeChips.forEach(target => {
+      const safeTarget = target.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      const countInput = document.getElementById(`day-${i}-count-${safeTarget}`);
+      const count = countInput ? parseInt(countInput.value) || 5 : 5;
+      totalExCount += count;
+      
+      let allowedNames = getAllowedExercisesForChip(target, excludeBW);
+      allowedNames = allowedNames.sort(() => 0.5 - Math.random()).slice(0, 35);
+      const allowedStr = allowedNames.length > 0 
+        ? `MUST CHOOSE ONLY FROM: [${allowedNames.join(', ')}]` 
+        : 'No specific exercises available.';
+      
+      daySummaryParts.push(`Target '${target}': Exactly ${count} exercises. ${allowedStr}`);
+    });
+    
+    const bwNote = excludeBW ? "EXCLUDE BODYWEIGHT EXERCISES: YES. Do NOT include any bodyweight exercises (like push-ups, crunches, bodyweight squats) for this day." : "EXCLUDE BODYWEIGHT EXERCISES: NO.";
+    promptsPerDay.push(`Day ${i}: Total ${totalExCount} exercises across targets [${activeChips.join(', ')}]. ${bwNote}\n  - ${daySummaryParts.join('\n  - ')}`);
   }
 
   forms.split.style.display = 'none';
@@ -232,6 +329,7 @@ async function handleSplitSubmit(e) {
     document.querySelector('[data-tab="tab-plan"]').click();
   } catch (err) {
     console.error(err);
+    alert('Failed to generate AI plan. Please check your internet connection or API settings.');
   } finally {
     loaders.ai.classList.remove('active');
     forms.split.style.display = 'block';
@@ -241,7 +339,7 @@ async function handleSplitSubmit(e) {
 // AI Plan Generation
 async function generatePlan(data, promptsPerDay) {
   const prompt = `
-    You are an expert fitness coach. Based on the extremely detailed user profile and their chosen day-by-day split, create a custom 7-day weekly workout plan.
+    You are an expert fitness coach. Based on the detailed user profile and their chosen day-by-day split with per-muscle group exercise counts, create a custom 7-day weekly workout plan.
     
     USER PROFILE:
     - Age: ${data['user-age']}, Gender: ${data['user-gender']}, Height: ${data['user-height']}cm, Weight: ${data['user-weight']}kg
@@ -252,7 +350,7 @@ async function generatePlan(data, promptsPerDay) {
     - Fav Muscle: ${data['user-fav-muscle']}, Least Fav Muscle: ${data['user-least-fav-muscle']}
     - Sleep: ${data['user-sleep']}, Stress: ${data['user-stress']}, Diet: ${data['user-diet']}, Hydration: ${data['user-hydration']}, Protein: ${data['user-protein']}
 
-    CUSTOM 7-DAY MULTI-TARGETS:
+    CUSTOM 7-DAY MULTI-TARGETS AND PER-TARGET COUNTS:
     ${promptsPerDay[0]}
     ${promptsPerDay[1]}
     ${promptsPerDay[2]}
@@ -269,14 +367,15 @@ async function generatePlan(data, promptsPerDay) {
          "weeklyPlan": [
            {
              "day": number, 
-             "type": string, // matches the day's custom target string
+             "type": string, // matches the day's targets string e.g. "Chest & Triceps" or "Rest"
              "exercises": array of strings // standard exercise names. Empty if Rest.
            }
          ]
        }
-    4. CRITICAL: Provide EXACTLY the requested "Number of Exercises" for that day.
-    5. CRITICAL TRUTH: You must ONLY output exercise names from the 'CHOOSE ONLY FROM' lists provided for each day. If a day says Rest, provide an empty array []. Do not invent names or include exercises for unrequested muscle groups.
-    6. Avoid exercises that aggravate ${data['user-injuries']}.
+    4. CRITICAL BREAKDOWN RULE: Respect the EXACT number of exercises specified for EACH muscle group / target for that day! (For example, if Day 1 requires Chest: 5 exercises and Triceps: 5 exercises, you MUST output EXACTLY 5 Chest exercises followed by EXACTLY 5 Triceps exercises, totaling 10 exercises).
+    5. CRITICAL BODYWEIGHT RULE: If "EXCLUDE BODYWEIGHT EXERCISES: YES" is specified for a day, you MUST NOT select any bodyweight or body-only exercises (such as push-ups, dips with body weight, crunches without weights, bodyweight squats, etc.). Pick weighted or machine/cable exercises exclusively.
+    6. CRITICAL TRUTH: You must ONLY output exercise names from the 'MUST CHOOSE ONLY FROM' candidate lists provided for each target. Do not invent names or include exercises for unrequested muscle groups.
+    7. Avoid exercises that aggravate ${data['user-injuries']}.
   `;
 
   const response = await fetch(GROQ_API_URL, {
@@ -306,7 +405,6 @@ async function generatePlan(data, promptsPerDay) {
   try {
     resultObj = JSON.parse(jsonStr);
   } catch (e) {
-    // Fallback extraction if API somehow added text outside the JSON object
     const match = jsonStr.match(/\{[\s\S]*\}/);
     resultObj = match ? JSON.parse(match[0]) : { weeklyPlan: [] };
   }
@@ -314,10 +412,9 @@ async function generatePlan(data, promptsPerDay) {
   let plan = resultObj.weeklyPlan || resultObj.plan || resultObj.days || Object.values(resultObj)[0] || [];
   
   weeklyPlan = plan.map(day => {
-    // Fallback to empty array if LLM omitted the 'exercises' field
     const exercisesList = day.exercises || [];
     day.exerciseDetails = exercisesList.map(exName => findExerciseInDB(exName) || { name: exName, notFound: true });
-    day.exercises = exercisesList; // normalize back
+    day.exercises = exercisesList;
     return day;
   });
 
@@ -334,8 +431,8 @@ function findExerciseInDB(name) {
   return match;
 }
 
-function getAllowedExercisesForChips(chips) {
-  if (chips.includes('Rest')) return [];
+function getAllowedExercisesForChip(chip, excludeBodyweight = false) {
+  if (chip === 'Rest') return [];
   
   const muscleMap = {
     'Chest': ['chest'],
@@ -352,15 +449,17 @@ function getAllowedExercisesForChips(chips) {
     'Full Body': ['chest', 'lats', 'lower back', 'middle back', 'traps', 'quadriceps', 'hamstrings', 'calves', 'glutes', 'abductors', 'adductors', 'biceps', 'triceps', 'forearms', 'shoulders', 'abdominals']
   };
 
-  let allowedMuscles = [];
-  let includeCardio = false;
-
-  chips.forEach(chip => {
-    if (chip === 'Cardio') includeCardio = true;
-    if (muscleMap[chip]) allowedMuscles.push(...muscleMap[chip]);
-  });
+  let allowedMuscles = muscleMap[chip] || [];
+  let includeCardio = (chip === 'Cardio');
 
   const allowedExercises = exerciseDB.filter(ex => {
+    if (excludeBodyweight) {
+      const eq = (ex.equipment || '').toLowerCase();
+      if (eq === 'body only' || eq === 'none' || eq === '' || !ex.equipment) {
+        return false;
+      }
+    }
+
     const isMuscleAllowed = ex.primaryMuscles && ex.primaryMuscles.some(m => allowedMuscles.includes(m));
     const isCardioAllowed = includeCardio && ex.category === 'cardio';
     return isMuscleAllowed || isCardioAllowed;
@@ -368,6 +467,7 @@ function getAllowedExercisesForChips(chips) {
 
   return [...new Set(allowedExercises)];
 }
+
 
 // Render Dashboard
 function renderDashboard() {
