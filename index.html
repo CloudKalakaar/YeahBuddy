@@ -71,9 +71,13 @@
         <p>Tap a day to view your exercises.</p>
         <div id="weekly-plan-container">
           <!-- Dynamically populated -->
+        <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 10px;">
+          <button id="regenerate-plan-btn" class="btn" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
+            ⚡ Generate Next Week's Plan <span style="font-size: 12px; font-weight: normal; opacity: 0.85;">(Same Muscle Split)</span>
+          </button>
+          <button id="change-split-btn" class="btn btn-secondary">✏️ Modify Muscle Split / Days</button>
+          <button id="discard-plan-btn" class="btn btn-secondary" style="border-color: #ff3333; color: #ff3333;">Discard This Week</button>
         </div>
-        <button id="regenerate-plan-btn" class="btn btn-secondary" style="margin-top: 20px;">Generate Next Week's Plan</button>
-        <button id="discard-plan-btn" class="btn btn-secondary" style="margin-top: 10px; border-color: #ff3333; color: #ff3333;">Discard This Week</button>
       </div>
 
       <!-- Library Tab -->

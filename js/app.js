@@ -160,6 +160,44 @@ function buildSplitUI() {
     // Initial counts UI update for default state (Rest)
     updateDayCountsUI(i);
   }
+
+  // Restore saved split config if available
+  const lastConfigStr = localStorage.getItem('yeahbuddy_lastSplitConfig');
+  if (lastConfigStr) {
+    try {
+      const lastConfig = JSON.parse(lastConfigStr);
+      if (lastConfig.dayConfigs && Array.isArray(lastConfig.dayConfigs)) {
+        lastConfig.dayConfigs.forEach(cfg => {
+          const i = cfg.dayIndex;
+          const chipContainer = document.getElementById(`day-${i}-chips`);
+          const bwCheckbox = document.getElementById(`day-${i}-exclude-bw`);
+          if (chipContainer && cfg.activeChips && cfg.activeChips.length > 0) {
+            Array.from(chipContainer.children).forEach(c => {
+              const target = c.dataset.target || c.innerText;
+              if (cfg.activeChips.includes(target)) {
+                c.classList.add('active');
+              } else {
+                c.classList.remove('active');
+              }
+            });
+          }
+          if (bwCheckbox && typeof cfg.excludeBW === 'boolean') {
+            bwCheckbox.checked = cfg.excludeBW;
+          }
+          updateDayCountsUI(i);
+          if (cfg.targetCounts) {
+            Object.keys(cfg.targetCounts).forEach(target => {
+              const safeTarget = target.toLowerCase().replace(/[^a-z0-9]/g, '-');
+              const inputEl = document.getElementById(`day-${i}-count-${safeTarget}`);
+              if (inputEl) inputEl.value = cfg.targetCounts[target];
+            });
+          }
+        });
+      }
+    } catch (e) {
+      console.error("Error restoring split config:", e);
+    }
+  }
 }
 
 function updateDayCountsUI(dayIndex) {
@@ -253,9 +291,17 @@ function setupEventListeners() {
     showScreen('dashboard');
   });
 
-  document.getElementById('regenerate-plan-btn').addEventListener('click', () => {
-    showScreen('split');
-  });
+  const regenBtn = document.getElementById('regenerate-plan-btn');
+  if (regenBtn) {
+    regenBtn.addEventListener('click', handleRegenerateNextWeek);
+  }
+
+  const changeSplitBtn = document.getElementById('change-split-btn');
+  if (changeSplitBtn) {
+    changeSplitBtn.addEventListener('click', () => {
+      showScreen('split');
+    });
+  }
 
   document.getElementById('discard-plan-btn').addEventListener('click', () => {
     if(confirm("Discard this week's plan?")) {
@@ -269,6 +315,7 @@ function setupEventListeners() {
     if(confirm("Factory Reset App? All data will be erased.")) {
       localStorage.removeItem('yeahbuddy_userData');
       localStorage.removeItem('yeahbuddy_weeklyPlan');
+      localStorage.removeItem('yeahbuddy_lastSplitConfig');
       window.location.reload(true);
     }
   });
@@ -310,12 +357,27 @@ async function handleSplitSubmit(e) {
   e.preventDefault();
   
   const promptsPerDay = [];
+  const dayConfigs = [];
   
   for(let i=1; i<=7; i++) {
     const chipContainer = document.getElementById(`day-${i}-chips`);
     const activeChips = Array.from(chipContainer.querySelectorAll('.chip.active')).map(c => c.dataset.target || c.innerText);
     const excludeBW = document.getElementById(`day-${i}-exclude-bw`).checked;
     
+    const targetCounts = {};
+    activeChips.forEach(target => {
+      const safeTarget = target.toLowerCase().replace(/[^a-z0-9]/g, '-');
+      const countInput = document.getElementById(`day-${i}-count-${safeTarget}`);
+      targetCounts[target] = countInput ? parseInt(countInput.value) || 5 : 5;
+    });
+
+    dayConfigs.push({
+      dayIndex: i,
+      activeChips,
+      excludeBW,
+      targetCounts
+    });
+
     if (activeChips.length === 0 || activeChips.includes('Rest')) {
       promptsPerDay.push(`Day ${i}: REST DAY. No exercises needed.`);
       continue;
@@ -325,9 +387,7 @@ async function handleSplitSubmit(e) {
     let totalExCount = 0;
     
     activeChips.forEach(target => {
-      const safeTarget = target.toLowerCase().replace(/[^a-z0-9]/g, '-');
-      const countInput = document.getElementById(`day-${i}-count-${safeTarget}`);
-      const count = countInput ? parseInt(countInput.value) || 5 : 5;
+      const count = targetCounts[target] || 5;
       totalExCount += count;
       
       let allowedNames = getAllowedExercisesForChip(target, excludeBW);
@@ -341,6 +401,10 @@ async function handleSplitSubmit(e) {
     const bwNote = excludeBW ? "EXCLUDE BODYWEIGHT EXERCISES: YES. Do NOT include any bodyweight exercises (like push-ups, crunches, bodyweight squats) for this day." : "EXCLUDE BODYWEIGHT EXERCISES: NO.";
     promptsPerDay.push(`Day ${i}: Total ${totalExCount} exercises across targets [${activeChips.join(', ')}]. ${bwNote}\n  - ${daySummaryParts.join('\n  - ')}`);
   }
+
+  // Save last split config for one-click 'Generate Next Week's Plan'
+  const lastSplitConfig = { promptsPerDay, dayConfigs };
+  localStorage.setItem('yeahbuddy_lastSplitConfig', JSON.stringify(lastSplitConfig));
 
   forms.split.style.display = 'none';
   loaders.ai.classList.add('active');
@@ -358,6 +422,39 @@ async function handleSplitSubmit(e) {
   } finally {
     loaders.ai.classList.remove('active');
     forms.split.style.display = 'block';
+  }
+}
+
+async function handleRegenerateNextWeek() {
+  const lastConfigStr = localStorage.getItem('yeahbuddy_lastSplitConfig');
+  if (!lastConfigStr) {
+    alert('No saved split found. Please configure your split first!');
+    showScreen('split');
+    return;
+  }
+
+  const lastConfig = JSON.parse(lastConfigStr);
+  
+  if (forms.split) forms.split.style.display = 'none';
+  loaders.ai.classList.add('active');
+
+  try {
+    // Re-run AI generation with fresh candidate choices while preserving split settings
+    await generatePlan(userData, lastConfig.promptsPerDay);
+    showScreen('dashboard');
+    renderDashboard();
+    
+    // Switch to Plan tab & scroll to top
+    document.querySelector('[data-tab="tab-plan"]').click();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    
+    alert("🎉 Next week's plan generated successfully with fresh exercise variations!");
+  } catch (err) {
+    console.error(err);
+    alert('Failed to generate next week\'s plan. Please check your connection or API settings.');
+  } finally {
+    loaders.ai.classList.remove('active');
+    if (forms.split) forms.split.style.display = 'block';
   }
 }
 
