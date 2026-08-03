@@ -3,6 +3,7 @@
 const GROQ_API_KEY = 'gsk_' + 'Ps7AouVDgKZK5FVxpOpbWGdyb3FYid9galuidjPyIOEUqTqe8IhI';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const EXERCISE_IMG_BASE_URL = 'https://raw.githubusercontent.com/yuhonas/free-exercise-db/main/exercises/';
+const PLACEHOLDER_SVG = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60' viewBox='0 0 60 60'%3E%3Crect width='100%25' height='100%25' fill='%23252525' rx='8'/%3E%3Cpath d='M20 30h20M25 24v12M35 24v12' stroke='%2339ff14' stroke-width='3' stroke-linecap='round'/%3E%3C/svg%3E";
 
 // State
 let exerciseDB = [];
@@ -527,18 +528,28 @@ function createExerciseElement(ex) {
   const div = document.createElement('div');
   div.className = 'exercise-item';
   
-  let imgSrc = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" fill="%232a2a2a"><rect width="100%" height="100%"/></svg>';
+  let imgSrc = PLACEHOLDER_SVG;
   if (ex.images && ex.images.length > 0) {
     imgSrc = EXERCISE_IMG_BASE_URL + ex.images[0];
   }
 
-  div.innerHTML = `
-    <img src="${imgSrc}" class="exercise-thumb" alt="${ex.name}" onerror="this.src='data:image/svg+xml;utf8,<svg xmlns=\\\\'http://www.w3.org/2000/svg\\\\' width=\\\\'60\\\\' height=\\\\'60\\\\' fill=\\\\'%232a2a2a\\\\'><rect width=\\\\'100%\\\\' height=\\\\'100%\\\\'/></svg>'">
-    <div class="exercise-info">
-      <div class="exercise-name">${ex.name}</div>
-      <div class="exercise-meta">${ex.equipment || 'Bodyweight'} • ${ex.primaryMuscles ? ex.primaryMuscles[0] : 'Various'}</div>
-    </div>
+  const imgEl = document.createElement('img');
+  imgEl.className = 'exercise-thumb';
+  imgEl.alt = ex.name || 'Exercise';
+  imgEl.src = imgSrc;
+  imgEl.onerror = function() {
+    this.src = PLACEHOLDER_SVG;
+  };
+
+  const infoDiv = document.createElement('div');
+  infoDiv.className = 'exercise-info';
+  infoDiv.innerHTML = `
+    <div class="exercise-name">${ex.name}</div>
+    <div class="exercise-meta">${ex.equipment || 'Bodyweight'} • ${ex.primaryMuscles ? ex.primaryMuscles[0] : 'Various'}</div>
   `;
+
+  div.appendChild(imgEl);
+  div.appendChild(infoDiv);
   
   div.addEventListener('click', () => openExerciseModal(ex));
   return div;
@@ -562,17 +573,26 @@ function openExerciseModal(ex) {
   
   const imgContainer = document.getElementById('modal-images');
   imgContainer.innerHTML = '';
-  if (ex.images) {
+  if (ex.images && ex.images.length > 0) {
     ex.images.forEach(img => {
       const imgEl = document.createElement('img');
       imgEl.src = EXERCISE_IMG_BASE_URL + img;
+      imgEl.onerror = function() {
+        this.src = PLACEHOLDER_SVG;
+      };
       imgContainer.appendChild(imgEl);
     });
+  } else {
+    const imgEl = document.createElement('img');
+    imgEl.src = PLACEHOLDER_SVG;
+    imgEl.style.maxHeight = '140px';
+    imgEl.style.objectFit = 'contain';
+    imgContainer.appendChild(imgEl);
   }
   
   const instrContainer = document.getElementById('modal-instructions');
   instrContainer.innerHTML = '';
-  if (ex.instructions) {
+  if (ex.instructions && ex.instructions.length > 0) {
     ex.instructions.forEach(inst => {
       const p = document.createElement('div');
       p.className = 'instruction-step';
@@ -582,6 +602,9 @@ function openExerciseModal(ex) {
   } else {
     instrContainer.innerHTML = '<p>No instructions available.</p>';
   }
+  
+  document.getElementById('exercise-modal').classList.add('active');
+}
   
   document.getElementById('exercise-modal').classList.add('active');
 }
