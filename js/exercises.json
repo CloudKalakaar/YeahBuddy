@@ -11095,8 +11095,8 @@
     ],
     "category": "strength",
     "images": [
-      "Low_Cable_Crossover/0.jpg",
-      "Low_Cable_Crossover/1.jpg"
+      "Cable_Crossover/0.jpg",
+      "Cable_Crossover/1.jpg"
     ],
     "id": "Low_Cable_Crossover"
   },
@@ -22633,7 +22633,10 @@
       "After a brief pause, push the bar back up to the starting position as you breathe out. Contract your chest at the top of the motion."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Barbell_Bench_Press_-_Medium_Grip/0.jpg",
+      "Barbell_Bench_Press_-_Medium_Grip/1.jpg"
+    ],
     "id": "Barbell_Bench_Press"
   },
   {
@@ -22655,7 +22658,10 @@
       "Press the barbell back up to the starting position while exhaling."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Barbell_Incline_Bench_Press_-_Medium_Grip/0.jpg",
+      "Barbell_Incline_Bench_Press_-_Medium_Grip/1.jpg"
+    ],
     "id": "Incline_Barbell_Bench_Press"
   },
   {
@@ -22677,7 +22683,10 @@
       "Slowly lower the dumbbells back to shoulder height and repeat."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Incline_Dumbbell_Bench_With_Palms_Facing_In/0.jpg",
+      "Incline_Dumbbell_Bench_With_Palms_Facing_In/1.jpg"
+    ],
     "id": "Incline_Dumbbell_Bench_Press"
   },
   {
@@ -22696,7 +22705,10 @@
       "Bring dumbbells back to start position in a hugging motion."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Dumbbell_Flyes/0.jpg",
+      "Dumbbell_Flyes/1.jpg"
+    ],
     "id": "Flat_Dumbbell_Flyes"
   },
   {
@@ -22715,7 +22727,10 @@
       "Return smoothly to the stretch position."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Cable_Crossover/0.jpg",
+      "Cable_Crossover/1.jpg"
+    ],
     "id": "High_to_Low_Cable_Fly"
   },
   {
@@ -22734,7 +22749,10 @@
       "Slowly return to the starting position felt by a chest stretch."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Butterfly/0.jpg",
+      "Butterfly/1.jpg"
+    ],
     "id": "Pec_Deck_Fly"
   },
   {
@@ -22756,7 +22774,10 @@
       "Slowly return handles back toward chest level."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Leverage_Chest_Press/0.jpg",
+      "Leverage_Chest_Press/1.jpg"
+    ],
     "id": "Machine_Chest_Press"
   },
   {
@@ -22779,7 +22800,10 @@
       "Lower the bar under control without rounding your lower back."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Bent_Over_Two-Arm_Long_Bar_Row/0.jpg",
+      "Bent_Over_Two-Arm_Long_Bar_Row/1.jpg"
+    ],
     "id": "Barbell_Bent-Over_Row"
   },
   {
@@ -22801,7 +22825,10 @@
       "Slowly extend arms back up to full stretch."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Wide-Grip_Lat_Pulldown/0.jpg",
+      "Wide-Grip_Lat_Pulldown/1.jpg"
+    ],
     "id": "Lat_Pulldown"
   },
   {
@@ -22823,7 +22850,10 @@
       "Slowly release back up."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "V-Bar_Pulldown/0.jpg",
+      "V-Bar_Pulldown/1.jpg"
+    ],
     "id": "Close-Grip_Cable_Lat_Pulldown"
   },
   {
@@ -22845,7 +22875,10 @@
       "Extend arms back forward without slumping back."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Seated_Cable_Rows/0.jpg",
+      "Seated_Cable_Rows/1.jpg"
+    ],
     "id": "Seated_Cable_Row"
   },
   {
@@ -22867,7 +22900,10 @@
       "Lower back under control."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Seated_Cable_Rows/0.jpg",
+      "Seated_Cable_Rows/1.jpg"
+    ],
     "id": "Single-Arm_Cable_Row"
   },
   {
@@ -22889,7 +22925,10 @@
       "Lower weight under control."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "T-Bar_Row_with_Handle/0.jpg",
+      "T-Bar_Row_with_Handle/1.jpg"
+    ],
     "id": "T-Bar_Row"
   },
   {
@@ -22911,7 +22950,10 @@
       "Lower weight back toward floor."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "One-Arm_Dumbbell_Row/0.jpg",
+      "One-Arm_Dumbbell_Row/1.jpg"
+    ],
     "id": "Single-Arm_Dumbbell_Row"
   },
   {
@@ -22933,7 +22975,10 @@
       "Lower back smoothly."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "One-Arm_Long_Bar_Row/0.jpg",
+      "One-Arm_Long_Bar_Row/1.jpg"
+    ],
     "id": "Meadow_Row"
   },
   {
@@ -22955,7 +23000,10 @@
       "Return bar completely to floor between reps."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Bent_Over_Two-Arm_Long_Bar_Row/0.jpg",
+      "Bent_Over_Two-Arm_Long_Bar_Row/1.jpg"
+    ],
     "id": "Pendlay_Row"
   },
   {
@@ -22976,7 +23024,10 @@
       "Allow bar to return to shoulder height."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Straight-Arm_Pulldown/0.jpg",
+      "Straight-Arm_Pulldown/1.jpg"
+    ],
     "id": "Straight-Arm_Cable_Pushdown"
   },
   {
@@ -22999,7 +23050,10 @@
       "Lower bar back to safety pins."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Rack_Pulls/0.jpg",
+      "Rack_Pulls/1.jpg"
+    ],
     "id": "Rack_Pull"
   },
   {
@@ -23020,7 +23074,10 @@
       "Lower bar under control back to upper chest."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Barbell_Shoulder_Press/0.jpg",
+      "Barbell_Shoulder_Press/1.jpg"
+    ],
     "id": "Overhead_Barbell_Press"
   },
   {
@@ -23041,7 +23098,10 @@
       "Lower back to ear level."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Dumbbell_Shoulder_Press/0.jpg",
+      "Dumbbell_Shoulder_Press/1.jpg"
+    ],
     "id": "Seated_Dumbbell_Shoulder_Press"
   },
   {
@@ -23060,7 +23120,10 @@
       "Lower back down slowly."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Side_Lateral_Raise/0.jpg",
+      "Side_Lateral_Raise/1.jpg"
+    ],
     "id": "Dumbbell_Lateral_Raise"
   },
   {
@@ -23079,7 +23142,10 @@
       "Lower under constant cable tension."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Cable_Seated_Lateral_Raise/0.jpg",
+      "Cable_Seated_Lateral_Raise/1.jpg"
+    ],
     "id": "Cable_Lateral_Raise"
   },
   {
@@ -23098,7 +23164,10 @@
       "Lower back down slowly."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Front_Dumbbell_Raise/0.jpg",
+      "Front_Dumbbell_Raise/1.jpg"
+    ],
     "id": "Barbell_Front_Raise"
   },
   {
@@ -23117,7 +23186,10 @@
       "Lower back down."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Front_Dumbbell_Raise/0.jpg",
+      "Front_Dumbbell_Raise/1.jpg"
+    ],
     "id": "Dumbbell_Front_Raise"
   },
   {
@@ -23138,7 +23210,10 @@
       "Return to crossed position."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Cable_Rear_Delt_Fly/0.jpg",
+      "Cable_Rear_Delt_Fly/1.jpg"
+    ],
     "id": "Rear_Delt_Cable_Fly"
   },
   {
@@ -23159,7 +23234,10 @@
       "Lower back down."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Dumbbell_Lying_Rear_Lateral_Raise/0.jpg",
+      "Dumbbell_Lying_Rear_Lateral_Raise/1.jpg"
+    ],
     "id": "Dumbbell_Rear_Delt_Fly"
   },
   {
@@ -23180,7 +23258,10 @@
       "Lower bar back down slowly."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Barbell_Curl/0.jpg",
+      "Barbell_Curl/1.jpg"
+    ],
     "id": "Barbell_Bicep_Curl"
   },
   {
@@ -23201,7 +23282,10 @@
       "Lower weight back to bottom stretch."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "EZ-Bar_Curl/0.jpg",
+      "EZ-Bar_Curl/1.jpg"
+    ],
     "id": "EZ-Bar_Bicep_Curl"
   },
   {
@@ -23222,7 +23306,10 @@
       "Lower back down."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Hammer_Curls/0.jpg",
+      "Hammer_Curls/1.jpg"
+    ],
     "id": "Dumbbell_Hammer_Curl"
   },
   {
@@ -23241,7 +23328,10 @@
       "Squeeze bicep at peak."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Preacher_Curl/0.jpg",
+      "Preacher_Curl/1.jpg"
+    ],
     "id": "Dumbbell_Preacher_Curl"
   },
   {
@@ -23262,7 +23352,10 @@
       "Lower bar back down."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Cable_Preacher_Curl/0.jpg",
+      "Cable_Preacher_Curl/1.jpg"
+    ],
     "id": "Cable_Bicep_Curl"
   },
   {
@@ -23281,7 +23374,10 @@
       "Lower dumbbell fully to extension."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Concentration_Curls/0.jpg",
+      "Concentration_Curls/1.jpg"
+    ],
     "id": "Concentration_Curl"
   },
   {
@@ -23300,7 +23396,10 @@
       "Allow bar to return to 90-degree elbow bend."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Triceps_Pushdown/0.jpg",
+      "Triceps_Pushdown/1.jpg"
+    ],
     "id": "Triceps_Cable_Pushdown"
   },
   {
@@ -23319,7 +23418,10 @@
       "Control release back up."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Triceps_Pushdown_-_Rope_Attachment/0.jpg",
+      "Triceps_Pushdown_-_Rope_Attachment/1.jpg"
+    ],
     "id": "Cable_Rope_Triceps_Extension"
   },
   {
@@ -23338,7 +23440,10 @@
       "Extend arms back up to starting position."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "EZ-Bar_Skullcrusher/0.jpg",
+      "EZ-Bar_Skullcrusher/1.jpg"
+    ],
     "id": "Skull_Crushers"
   },
   {
@@ -23357,7 +23462,10 @@
       "Press dumbbell back overhead."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Standing_Dumbbell_Triceps_Extension/0.jpg",
+      "Standing_Dumbbell_Triceps_Extension/1.jpg"
+    ],
     "id": "Overhead_Dumbbell_Triceps_Extension"
   },
   {
@@ -23376,7 +23484,10 @@
       "Lower dumbbell back to 90 degrees."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Tricep_Dumbbell_Kickback/0.jpg",
+      "Tricep_Dumbbell_Kickback/1.jpg"
+    ],
     "id": "Dumbbell_Kickbacks"
   },
   {
@@ -23398,7 +23509,10 @@
       "Slowly allow handles to return up."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Dip_Machine/0.jpg",
+      "Dip_Machine/1.jpg"
+    ],
     "id": "Machine_Triceps_Dip"
   },
   {
@@ -23420,7 +23534,10 @@
       "Drive through heels to return to standing position."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Barbell_Squat/0.jpg",
+      "Barbell_Squat/1.jpg"
+    ],
     "id": "Barbell_Back_Squat"
   },
   {
@@ -23442,7 +23559,10 @@
       "Drive up through heels to standing."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Front_Barbell_Squat/0.jpg",
+      "Front_Barbell_Squat/1.jpg"
+    ],
     "id": "Barbell_Front_Squat"
   },
   {
@@ -23464,7 +23584,10 @@
       "Drive through front heel to return to top."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Split_Squat_with_Dumbbells/0.jpg",
+      "Split_Squat_with_Dumbbells/1.jpg"
+    ],
     "id": "Bulgarian_Split_Squat"
   },
   {
@@ -23486,7 +23609,10 @@
       "Push off front foot to step back to starting position."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Dumbbell_Lunges/0.jpg",
+      "Dumbbell_Lunges/1.jpg"
+    ],
     "id": "Dumbbell_Lunge"
   },
   {
@@ -23505,7 +23631,10 @@
       "Lower weight back down smoothly."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Leg_Extensions/0.jpg",
+      "Leg_Extensions/1.jpg"
+    ],
     "id": "Leg_Extension"
   },
   {
@@ -23526,7 +23655,10 @@
       "Lower back to extended position."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Lying_Leg_Curls/0.jpg",
+      "Lying_Leg_Curls/1.jpg"
+    ],
     "id": "Lying_Leg_Curl"
   },
   {
@@ -23548,7 +23680,10 @@
       "Drive hips forward to return to standing."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Dumbbell_Clean/0.jpg",
+      "Dumbbell_Clean/1.jpg"
+    ],
     "id": "Dumbbell_Romanian_Deadlift"
   },
   {
@@ -23567,7 +23702,10 @@
       "Lower heels below block level."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Standing_Calf_Raises/0.jpg",
+      "Standing_Calf_Raises/1.jpg"
+    ],
     "id": "Standing_Calf_Raise"
   },
   {
@@ -23588,7 +23726,10 @@
       "Control return back to top position."
     ],
     "category": "strength",
-    "images": [],
+    "images": [
+      "Standing_Cable_Wood_Chop/0.jpg",
+      "Standing_Cable_Wood_Chop/1.jpg"
+    ],
     "id": "Woodchopper"
   }
 ]
