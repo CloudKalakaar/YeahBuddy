@@ -44,8 +44,8 @@ let appSettings = JSON.parse(localStorage.getItem('yeahbuddy_appSettings')) || {
   sound: true
 };
 
-let currentViewingDay = null; // Currently open day object for dayDetail
-let swapTargetContext = null; // { dayIndex, exerciseIndex } or { workoutExerciseIndex }
+let currentViewingDay = null;
+let swapTargetContext = null;
 let workoutTimerInterval = null;
 let restTimerInterval = null;
 let restTimerTotal = 90;
@@ -86,7 +86,6 @@ async function initApp() {
   registerServiceWorker();
   setupPullToRefresh();
   
-  // Load exercise DB
   try {
     if (typeof exerciseDBData !== 'undefined') {
       exerciseDB = exerciseDBData;
@@ -95,7 +94,7 @@ async function initApp() {
     console.error("Failed to load exercise DB", err);
   }
 
-  // Inject questionnaire into onboarding & settings forms
+  // Inject questionnaire template into onboarding & settings
   const tmpl = document.getElementById('profile-questions-template');
   if (tmpl) {
     const onboardingContainer = document.getElementById('onboarding-questions-container');
@@ -108,20 +107,15 @@ async function initApp() {
     }
   }
 
-  // Apply settings to UI
   applySettingsToUI();
-
-  // Setup UI components
   buildSplitUI();
   setupEventListeners();
 
-  // Resume active workout if one was in progress
   if (activeWorkout) {
     showActiveWorkoutTabButton(true);
     startWorkoutTimer();
   }
 
-  // Initial Routing
   if (userData && weeklyPlan) {
     rehydrateWeeklyPlan();
     populateForm(forms.settings, userData);
@@ -145,7 +139,6 @@ function applySettingsToUI() {
   if (timerSelect) timerSelect.value = appSettings.restTimer || 90;
   if (soundToggle) soundToggle.checked = appSettings.sound !== false;
 
-  // Update unit labels
   document.querySelectorAll('.unit-label').forEach(el => {
     el.innerText = appSettings.units || 'kg';
   });
@@ -156,9 +149,13 @@ function applySettingsToUI() {
 function rehydrateWeeklyPlan() {
   if (!weeklyPlan || !Array.isArray(weeklyPlan)) return;
   weeklyPlan.forEach(day => {
+    if (day.targets && Array.isArray(day.targets)) {
+      day.targets.forEach(t => {
+        t.exerciseDetails = (t.exercises || []).map(exName => findExerciseInDB(exName) || { name: exName, notFound: true, images: [] });
+      });
+    }
     const exercisesList = day.exercises || [];
     day.exerciseDetails = exercisesList.map(exName => findExerciseInDB(exName) || { name: exName, notFound: true, images: [] });
-    day.exercises = exercisesList;
   });
 }
 
@@ -240,11 +237,9 @@ function buildSplitUI() {
       chipContainer.appendChild(chip);
     });
     
-    // Default to Rest
     chipContainer.children[chipContainer.children.length - 1].classList.add('active');
     dayDiv.appendChild(chipContainer);
     
-    // Exclude Bodyweight toggle pill
     const bwDiv = document.createElement('div');
     bwDiv.className = 'exclude-bw-container';
     bwDiv.innerHTML = `
@@ -256,7 +251,6 @@ function buildSplitUI() {
     `;
     dayDiv.appendChild(bwDiv);
 
-    // Target counts container
     const countsDiv = document.createElement('div');
     countsDiv.className = 'target-counts-container';
     countsDiv.id = `day-${i}-counts-container`;
@@ -266,7 +260,6 @@ function buildSplitUI() {
     updateDayCountsUI(i);
   }
 
-  // Restore saved split config if available
   const lastConfigStr = localStorage.getItem('yeahbuddy_lastSplitConfig');
   if (lastConfigStr) {
     try {
@@ -317,7 +310,6 @@ function updateDayCountsUI(dayIndex) {
     return;
   }
 
-  // Preserve existing values
   const existingValues = {};
   countsContainer.querySelectorAll('input[data-target]').forEach(input => {
     existingValues[input.dataset.target] = input.value;
@@ -361,7 +353,7 @@ function updateDayCountsUI(dayIndex) {
 }
 
 // ==========================================
-// 3. AI & Offline Workout Generator
+// 3. Exact Deterministic Plan Generator
 // ==========================================
 async function handleSplitSubmit(e) {
   e.preventDefault();
@@ -412,7 +404,6 @@ async function handleSplitSubmit(e) {
     promptsPerDay.push(`Day ${i}: Total ${totalExCount} exercises across targets [${activeChips.join(', ')}]. ${bwNote}\n  - ${daySummaryParts.join('\n  - ')}`);
   }
 
-  // Save last split config for one-click 'Generate Next Week's Plan'
   const lastSplitConfig = { promptsPerDay, dayConfigs };
   localStorage.setItem('yeahbuddy_lastSplitConfig', JSON.stringify(lastSplitConfig));
 
@@ -424,7 +415,7 @@ async function handleSplitSubmit(e) {
     showScreen('dashboard');
     switchTab('tab-plan');
   } catch (err) {
-    console.error("AI Generation failed, falling back to smart offline planner:", err);
+    console.error("AI Generation failed, using smart deterministic offline planner:", err);
     generateOfflinePlan(dayConfigs);
     showScreen('dashboard');
     switchTab('tab-plan');
@@ -452,7 +443,7 @@ async function handleRegenerateNextWeek() {
     showScreen('dashboard');
     switchTab('tab-plan');
     window.scrollTo({ top: 0, behavior: 'smooth' });
-    alert("🎉 Next week's plan generated successfully with fresh exercise variations!");
+    alert("🎉 Next week's plan generated successfully with clean target splits!");
   } catch (err) {
     console.error("Regenerate failed, using smart offline generator:", err);
     generateOfflinePlan(lastConfig.dayConfigs);
@@ -468,39 +459,31 @@ async function handleRegenerateNextWeek() {
 
 async function generatePlan(data, promptsPerDay, dayConfigs) {
   const prompt = `
-    You are an expert fitness coach. Based on the detailed user profile and their chosen day-by-day split with per-muscle group exercise counts, create a custom 7-day weekly workout plan.
+    You are an expert fitness coach. Create a custom 7-day weekly workout plan grouped strictly by target muscle.
     
     USER PROFILE:
     - Age: ${data['user-age']}, Gender: ${data['user-gender']}, Height: ${data['user-height']}cm, Weight: ${data['user-weight']}kg
-    - Goal: ${data['user-goal']}, Timeline: ${data['user-timeline']}
-    - Experience: ${data['user-level']}, Injuries: ${data['user-injuries']}
-    - Workout Duration: ${data['user-duration']}, Equipment: ${data['user-equipment']}
+    - Goal: ${data['user-goal']}, Level: ${data['user-level']}, Injuries: ${data['user-injuries']}
 
-    CUSTOM 7-DAY MULTI-TARGETS AND PER-TARGET COUNTS:
+    SCHEDULE & TARGET VOLUME:
     ${promptsPerDay.join('\n')}
 
     RULES:
-    1. Output MUST be ONLY valid JSON, no markdown formatting, no backticks.
-    2. Format must be a JSON object with a single key "weeklyPlan" containing an array of exactly 7 objects.
-    3. Schema per day:
+    1. Output MUST be ONLY valid JSON matching this schema:
        {
          "weeklyPlan": [
            {
-             "day": number, 
-             "type": string, // e.g. "Chest & Triceps" or "Rest"
-             "exercises": array of strings // standard exercise names. Empty if Rest.
+             "day": 1,
+             "type": "Chest & Triceps",
+             "targets": [
+               { "muscle": "Chest", "exercises": ["ex1", "ex2", "ex3", "ex4", "ex5"] },
+               { "muscle": "Triceps", "exercises": ["ex6", "ex7", "ex8", "ex9", "ex10"] }
+             ]
            }
          ]
        }
-    4. CRITICAL BREAKDOWN RULE: Respect the EXACT number of exercises specified for EACH muscle group / target for that day!
-    5. CRITICAL BODYWEIGHT RULE: If "EXCLUDE BODYWEIGHT EXERCISES: YES" is specified, do not select bodyweight-only exercises.
-    6. CRITICAL TRUTH: You must ONLY output exercise names from the candidate lists provided.
-    7. CRITICAL MOVEMENT DIVERSITY:
-       - For 'Back': Mix vertical pulls (Lat Pulldown), horizontal rows (Barbell/Cable Row), and deadlifts/pullovers.
-       - For 'Chest': Mix flat press, incline press, and flyes/dips.
-       - For 'Legs': Mix squats/press, hamstrings (RDL/leg curl), unilateral (lunges/split squats), and calves.
-       - For 'Shoulders': Mix overhead press, lateral raises, rear delts (face pulls), and shrugs.
-       - For 'Triceps' / 'Biceps': Mix compound presses, overhead/incline extensions, hammer curls, and isolation curls.
+    2. Provide EXACTLY the number of exercises requested for EACH individual muscle group!
+    3. Choose ONLY from candidate exercise names provided.
   `;
 
   const response = await fetch(GROQ_API_URL, {
@@ -512,13 +495,13 @@ async function generatePlan(data, promptsPerDay, dayConfigs) {
     body: JSON.stringify({
       model: "llama-3.1-8b-instant",
       messages: [{ role: "user", content: prompt }],
-      temperature: 0.5,
+      temperature: 0.4,
       response_format: { type: "json_object" }
     })
   });
 
   if (!response.ok) {
-    throw new Error(`API returned ${response.status}`);
+    throw new Error(`API error: ${response.status}`);
   }
 
   const result = await response.json();
@@ -532,54 +515,88 @@ async function generatePlan(data, promptsPerDay, dayConfigs) {
     resultObj = match ? JSON.parse(match[0]) : { weeklyPlan: [] };
   }
   
-  let plan = resultObj.weeklyPlan || resultObj.plan || resultObj.days || Object.values(resultObj)[0] || [];
+  let rawPlan = resultObj.weeklyPlan || resultObj.plan || resultObj.days || Object.values(resultObj)[0] || [];
   
-  weeklyPlan = plan.map(day => {
-    const exercisesList = day.exercises || [];
-    day.exerciseDetails = exercisesList.map(exName => findExerciseInDB(exName) || { name: exName, notFound: true, images: [] });
-    day.exercises = exercisesList;
-    return day;
+  // Normalize strictly with user requested counts
+  normalizeAndSavePlan(rawPlan, dayConfigs);
+}
+
+// Deterministic normalization guaranteeing exact per-muscle count
+function normalizeAndSavePlan(rawPlan, dayConfigs) {
+  weeklyPlan = dayConfigs.map(cfg => {
+    const dayNum = cfg.dayIndex;
+    const isRest = !cfg.activeChips || cfg.activeChips.length === 0 || cfg.activeChips.includes('Rest');
+    
+    if (isRest) {
+      return { day: dayNum, type: 'Rest', targets: [], exercises: [], exerciseDetails: [] };
+    }
+
+    const type = cfg.activeChips.join(' & ');
+    const rawDay = Array.isArray(rawPlan) ? rawPlan.find(d => d.day === dayNum) : null;
+    
+    const normalizedTargets = [];
+    const allDayExercises = [];
+    const allDayDetails = [];
+
+    cfg.activeChips.forEach(targetMuscle => {
+      const requiredCount = (cfg.targetCounts && cfg.targetCounts[targetMuscle]) || 5;
+      const candidates = getAllowedExercisesForChip(targetMuscle, cfg.excludeBW);
+      
+      let rawTargetExercises = [];
+      if (rawDay && rawDay.targets && Array.isArray(rawDay.targets)) {
+        const foundTarget = rawDay.targets.find(t => t.muscle && t.muscle.toLowerCase() === targetMuscle.toLowerCase());
+        if (foundTarget && Array.isArray(foundTarget.exercises)) {
+          rawTargetExercises = foundTarget.exercises;
+        }
+      } else if (rawDay && Array.isArray(rawDay.exercises)) {
+        // Fallback matching
+        rawTargetExercises = rawDay.exercises;
+      }
+
+      const validExercises = [];
+      rawTargetExercises.forEach(exName => {
+        const found = findExerciseInDB(exName);
+        if (found && !validExercises.includes(found.name)) {
+          validExercises.push(found.name);
+        }
+      });
+
+      // Fill missing up to exact requiredCount
+      for (let c of candidates) {
+        if (validExercises.length >= requiredCount) break;
+        if (!validExercises.includes(c)) {
+          validExercises.push(c);
+        }
+      }
+
+      const finalExercises = validExercises.slice(0, requiredCount);
+      const finalDetails = finalExercises.map(name => findExerciseInDB(name) || { name, images: [] });
+
+      normalizedTargets.push({
+        muscle: targetMuscle,
+        count: requiredCount,
+        exercises: finalExercises,
+        exerciseDetails: finalDetails
+      });
+
+      allDayExercises.push(...finalExercises);
+      allDayDetails.push(...finalDetails);
+    });
+
+    return {
+      day: dayNum,
+      type,
+      targets: normalizedTargets,
+      exercises: allDayExercises,
+      exerciseDetails: allDayDetails
+    };
   });
 
   localStorage.setItem('yeahbuddy_weeklyPlan', JSON.stringify(weeklyPlan));
 }
 
-// Smart Offline Generator: Never leaves the user hanging if offline or API limit reached
 function generateOfflinePlan(dayConfigs) {
-  if (!dayConfigs || !Array.isArray(dayConfigs)) return;
-
-  weeklyPlan = dayConfigs.map(cfg => {
-    const day = cfg.dayIndex;
-    const isRest = !cfg.activeChips || cfg.activeChips.length === 0 || cfg.activeChips.includes('Rest');
-    
-    if (isRest) {
-      return { day, type: 'Rest', exercises: [], exerciseDetails: [] };
-    }
-
-    const type = cfg.activeChips.join(' & ');
-    const exercises = [];
-
-    cfg.activeChips.forEach(target => {
-      const count = (cfg.targetCounts && cfg.targetCounts[target]) || 5;
-      const candidates = getAllowedExercisesForChip(target, cfg.excludeBW);
-      
-      // Pick balanced exercises
-      const chosen = candidates.slice(0, count);
-      exercises.push(...chosen);
-    });
-
-    const uniqueExercises = [...new Set(exercises)];
-    const exerciseDetails = uniqueExercises.map(name => findExerciseInDB(name) || { name, notFound: true, images: [] });
-
-    return {
-      day,
-      type,
-      exercises: uniqueExercises,
-      exerciseDetails
-    };
-  });
-
-  localStorage.setItem('yeahbuddy_weeklyPlan', JSON.stringify(weeklyPlan));
+  normalizeAndSavePlan([], dayConfigs);
 }
 
 function getAllowedExercisesForChip(chip, excludeBodyweight = false) {
@@ -636,7 +653,7 @@ function findExerciseInDB(name) {
 }
 
 // ==========================================
-// 4. Plan Dashboard & Day Detail Views
+// 4. OpenGym-Style Plan & Day Detail Displays
 // ==========================================
 function renderDashboard() {
   const container = document.getElementById('weekly-plan-container');
@@ -691,77 +708,113 @@ function openDayDetail(day) {
   }
 
   if (isRest) {
-    container.innerHTML = '<p style="padding:20px; color:var(--text-muted); text-align:center;">Rest day. Hydrate, eat enough protein, and let your muscles grow!</p>';
+    container.innerHTML = '<p style="padding:30px 20px; color:var(--text-muted); text-align:center;">Rest day. Hydrate, eat enough protein, and let your muscles grow!</p>';
     return;
   }
 
-  day.exerciseDetails.forEach((ex, idx) => {
-    const el = createDayExerciseItem(ex, idx);
-    container.appendChild(el);
-  });
+  // If targets array is present, render grouped by muscle (OpenGym style)
+  if (day.targets && Array.isArray(day.targets) && day.targets.length > 0) {
+    day.targets.forEach((targetGroup, targetIdx) => {
+      const section = document.createElement('div');
+      section.className = 'target-group-section';
+      
+      section.innerHTML = `
+        <div class="target-group-header">
+          <div class="target-group-badge-title">
+            <span class="target-group-pill">${targetGroup.muscle}</span>
+          </div>
+          <span class="target-group-count">${targetGroup.exercises.length} Exercises</span>
+        </div>
+        <div class="opengym-exercise-list" id="target-group-list-${targetIdx}"></div>
+      `;
+
+      const listContainer = section.querySelector(`#target-group-list-${targetIdx}`);
+      targetGroup.exercises.forEach((exName, exIdx) => {
+        const exDetail = findExerciseInDB(exName) || { name: exName, images: [] };
+        const card = createOpenGymExerciseCard(exDetail, targetIdx, exIdx);
+        listContainer.appendChild(card);
+      });
+
+      container.appendChild(section);
+    });
+  } else {
+    // Flat fallback
+    const listContainer = document.createElement('div');
+    listContainer.className = 'opengym-exercise-list';
+    day.exercises.forEach((exName, exIdx) => {
+      const exDetail = findExerciseInDB(exName) || { name: exName, images: [] };
+      const card = createOpenGymExerciseCard(exDetail, 0, exIdx);
+      listContainer.appendChild(card);
+    });
+    container.appendChild(listContainer);
+  }
 }
 
-function createDayExerciseItem(ex, index) {
-  const div = document.createElement('div');
-  div.className = 'exercise-item';
+// OpenGym-Style Exercise Card Component
+function createOpenGymExerciseCard(ex, targetIdx, exIdx) {
+  const card = document.createElement('div');
+  card.className = 'opengym-exercise-card';
   
   let imgSrc = PLACEHOLDER_SVG;
   if (ex.images && ex.images.length > 0) {
     imgSrc = EXERCISE_IMG_BASE_URL + ex.images[0];
   }
 
-  const imgEl = document.createElement('img');
-  imgEl.className = 'exercise-thumb';
-  imgEl.alt = ex.name || 'Exercise';
-  imgEl.src = imgSrc;
-  imgEl.onerror = function() {
-    this.src = PLACEHOLDER_SVG;
-  };
+  const primaryMuscle = ex.primaryMuscles && ex.primaryMuscles.length > 0 ? ex.primaryMuscles[0] : 'Target';
+  const equipment = ex.equipment || 'Gym';
 
-  const infoDiv = document.createElement('div');
-  infoDiv.className = 'exercise-info';
-  infoDiv.innerHTML = `
-    <div class="exercise-name">${ex.name}</div>
-    <div class="exercise-meta">${ex.equipment || 'Gym'} • ${ex.primaryMuscles ? ex.primaryMuscles.join(', ') : 'Target'}</div>
+  card.innerHTML = `
+    <div class="opengym-card-left">
+      <div class="opengym-thumb-wrapper">
+        <img src="${imgSrc}" class="opengym-thumb-img" alt="${ex.name}" onerror="this.src='${PLACEHOLDER_SVG}'">
+      </div>
+      <div class="opengym-card-info">
+        <div class="opengym-exercise-title">${ex.name}</div>
+        <div class="opengym-badge-row">
+          <span class="opengym-badge muscle">${primaryMuscle}</span>
+          <span class="opengym-badge equipment">${equipment}</span>
+          <span class="opengym-badge scheme">3 Sets × 8-12</span>
+        </div>
+      </div>
+    </div>
+    <div class="opengym-card-right">
+      <button class="opengym-action-btn swap" title="Swap exercise">🔄 Swap</button>
+      <button class="opengym-action-btn delete" title="Remove exercise">✕</button>
+    </div>
   `;
 
-  // Action buttons: Swap & Delete
-  const actionsDiv = document.createElement('div');
-  actionsDiv.className = 'exercise-item-actions';
-  
-  const swapBtn = document.createElement('button');
-  swapBtn.className = 'btn btn-secondary btn-xs';
-  swapBtn.innerText = '🔄 Swap';
-  swapBtn.title = 'Replace with another exercise';
-  swapBtn.addEventListener('click', (e) => {
+  // Swap button
+  card.querySelector('.opengym-action-btn.swap').addEventListener('click', (e) => {
     e.stopPropagation();
-    openSwapModal({ dayIndex: currentViewingDay.day - 1, exerciseIndex: index });
+    openSwapModal({ dayIndex: currentViewingDay.day - 1, targetIdx, exIdx });
   });
 
-  const deleteBtn = document.createElement('button');
-  deleteBtn.className = 'btn btn-danger-outline btn-xs';
-  deleteBtn.innerText = '✕';
-  deleteBtn.title = 'Remove exercise from day';
-  deleteBtn.addEventListener('click', (e) => {
+  // Delete button
+  card.querySelector('.opengym-action-btn.delete').addEventListener('click', (e) => {
     e.stopPropagation();
-    removeExerciseFromDay(index);
+    removeExerciseFromTargetGroup(targetIdx, exIdx);
   });
 
-  actionsDiv.appendChild(swapBtn);
-  actionsDiv.appendChild(deleteBtn);
+  // Card click opens full detail modal
+  card.addEventListener('click', () => openExerciseModal(ex));
 
-  div.appendChild(imgEl);
-  div.appendChild(infoDiv);
-  div.appendChild(actionsDiv);
-
-  div.addEventListener('click', () => openExerciseModal(ex));
-  return div;
+  return card;
 }
 
-function removeExerciseFromDay(index) {
+function removeExerciseFromTargetGroup(targetIdx, exIdx) {
   if (!currentViewingDay) return;
-  currentViewingDay.exercises.splice(index, 1);
-  currentViewingDay.exerciseDetails.splice(index, 1);
+  if (currentViewingDay.targets && currentViewingDay.targets[targetIdx]) {
+    currentViewingDay.targets[targetIdx].exercises.splice(exIdx, 1);
+    currentViewingDay.targets[targetIdx].exerciseDetails.splice(exIdx, 1);
+    
+    // Sync flat arrays
+    currentViewingDay.exercises = currentViewingDay.targets.flatMap(t => t.exercises);
+    currentViewingDay.exerciseDetails = currentViewingDay.targets.flatMap(t => t.exerciseDetails);
+  } else {
+    currentViewingDay.exercises.splice(exIdx, 1);
+    currentViewingDay.exerciseDetails.splice(exIdx, 1);
+  }
+
   localStorage.setItem('yeahbuddy_weeklyPlan', JSON.stringify(weeklyPlan));
   openDayDetail(currentViewingDay);
 }
@@ -775,18 +828,15 @@ function startWorkoutFromDay(day) {
     return;
   }
 
-  // Check if an active workout is already running
   if (activeWorkout && !confirm("An active workout is already running. Do you want to replace it with this workout?")) {
     switchTab('tab-active-workout');
     return;
   }
 
-  // Construct workout structure with previous performance records
   const exercises = day.exercises.map(exName => {
     const exDetail = findExerciseInDB(exName) || { name: exName, images: [] };
     const prevRecord = getPreviousExercisePerformance(exName);
     
-    // Default 3 sets
     const sets = [1, 2, 3].map(setNum => ({
       setNum,
       weight: prevRecord ? prevRecord.weight : 0,
@@ -835,7 +885,6 @@ function startQuickWorkout() {
   showScreen('dashboard');
   switchTab('tab-active-workout');
   
-  // Prompt user to add first exercise
   openSwapModal({ workoutExerciseIndex: -1 });
 }
 
@@ -933,7 +982,6 @@ function renderActiveWorkoutTab() {
       <button class="add-set-btn" data-exidx="${exIdx}">+ Add Set</button>
     `;
 
-    // Populate set rows
     const tbody = card.querySelector(`#sets-tbody-${exIdx}`);
     exItem.sets.forEach((set, setIdx) => {
       const tr = document.createElement('tr');
@@ -961,12 +1009,10 @@ function renderActiveWorkoutTab() {
     container.appendChild(card);
   });
 
-  // Attach set event listeners
   attachActiveWorkoutEventListeners(container);
 }
 
 function attachActiveWorkoutEventListeners(container) {
-  // Input changes
   container.querySelectorAll('.input-weight').forEach(input => {
     input.addEventListener('change', (e) => {
       const exIdx = parseInt(e.target.dataset.exidx);
@@ -985,9 +1031,8 @@ function attachActiveWorkoutEventListeners(container) {
     });
   });
 
-  // Checkmark button (complete set & start rest timer)
   container.querySelectorAll('.set-check-btn').forEach(btn => {
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener('click', () => {
       const exIdx = parseInt(btn.dataset.exidx);
       const setIdx = parseInt(btn.dataset.setidx);
       const setObj = activeWorkout.exercises[exIdx].sets[setIdx];
@@ -1004,20 +1049,17 @@ function attachActiveWorkoutEventListeners(container) {
     });
   });
 
-  // Delete Set button
   container.querySelectorAll('.set-delete-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const exIdx = parseInt(btn.dataset.exidx);
       const setIdx = parseInt(btn.dataset.setidx);
       activeWorkout.exercises[exIdx].sets.splice(setIdx, 1);
-      // Re-index sets
       activeWorkout.exercises[exIdx].sets.forEach((s, idx) => s.setNum = idx + 1);
       saveActiveWorkoutState();
       renderActiveWorkoutTab();
     });
   });
 
-  // Add Set button
   container.querySelectorAll('.add-set-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const exIdx = parseInt(btn.dataset.exidx);
@@ -1038,7 +1080,6 @@ function attachActiveWorkoutEventListeners(container) {
     });
   });
 
-  // Swap exercise button
   container.querySelectorAll('.btn-swap-active').forEach(btn => {
     btn.addEventListener('click', () => {
       const exIdx = parseInt(btn.dataset.idx);
@@ -1046,7 +1087,6 @@ function attachActiveWorkoutEventListeners(container) {
     });
   });
 
-  // Delete exercise button
   container.querySelectorAll('.btn-delete-active').forEach(btn => {
     btn.addEventListener('click', () => {
       const exIdx = parseInt(btn.dataset.idx);
@@ -1083,7 +1123,6 @@ function finishActiveWorkout() {
     });
   });
 
-  // Record into history
   const finishedRecord = {
     id: activeWorkout.id,
     title: activeWorkout.title,
@@ -1098,14 +1137,12 @@ function finishActiveWorkout() {
   workoutHistory.unshift(finishedRecord);
   localStorage.setItem('yeahbuddy_workoutHistory', JSON.stringify(workoutHistory));
 
-  // Clear active workout
   if (workoutTimerInterval) clearInterval(workoutTimerInterval);
   activeWorkout = null;
   localStorage.removeItem('yeahbuddy_activeWorkout');
   showActiveWorkoutTabButton(false);
   stopRestTimer();
 
-  // Populate Finish Celebration Modal
   document.getElementById('finish-duration').innerText = `${durationMinutes} mins`;
   document.getElementById('finish-volume').innerText = `${totalVolume.toLocaleString()} ${appSettings.units}`;
   document.getElementById('finish-sets').innerText = `${totalSets} sets`;
@@ -1115,7 +1152,7 @@ function finishActiveWorkout() {
 }
 
 function cancelActiveWorkout() {
-  if (!confirm("Are you sure you want to discard this workout in progress? All logged sets will be lost.")) return;
+  if (!confirm("Discard this workout in progress? All logged sets will be lost.")) return;
   
   if (workoutTimerInterval) clearInterval(workoutTimerInterval);
   activeWorkout = null;
@@ -1133,7 +1170,7 @@ function getPreviousExercisePerformance(exerciseName) {
     if (foundEx && foundEx.sets && foundEx.sets.length > 0) {
       const completedSets = foundEx.sets.filter(s => s.completed);
       if (completedSets.length > 0) {
-        return completedSets[completedSets.length - 1]; // Return last completed set
+        return completedSets[completedSets.length - 1];
       }
     }
   }
@@ -1182,7 +1219,6 @@ function stopRestTimer() {
 }
 
 function triggerRestTimerAlarm() {
-  // Web Audio API Synthesizer beep
   if (appSettings.sound !== false) {
     try {
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -1190,8 +1226,8 @@ function triggerRestTimerAlarm() {
       const gain = audioCtx.createGain();
 
       osc.type = 'sine';
-      osc.frequency.setValueAtTime(880, audioCtx.currentTime); // High pitch beep
-      osc.frequency.setValueAtTime(1174.66, audioCtx.currentTime + 0.15); // D6
+      osc.frequency.setValueAtTime(880, audioCtx.currentTime);
+      osc.frequency.setValueAtTime(1174.66, audioCtx.currentTime + 0.15);
       gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.5);
 
@@ -1204,7 +1240,6 @@ function triggerRestTimerAlarm() {
     }
   }
 
-  // Vibration API for mobile devices
   if ('vibrate' in navigator) {
     try {
       navigator.vibrate([200, 100, 200]);
@@ -1222,10 +1257,8 @@ function renderLibrary() {
   container.innerHTML = '';
 
   let filtered = exerciseDB.filter(ex => {
-    // Search query filter
     const matchesSearch = !currentSearchQuery || ex.name.toLowerCase().includes(currentSearchQuery.toLowerCase());
     
-    // Muscle category filter
     let matchesMuscle = true;
     if (currentMuscleFilter !== 'all') {
       if (currentMuscleFilter === 'cardio') {
@@ -1235,7 +1268,6 @@ function renderLibrary() {
       }
     }
 
-    // Equipment filter
     let matchesEquipment = true;
     if (currentEquipmentFilter !== 'all') {
       matchesEquipment = ex.equipment && ex.equipment.toLowerCase().includes(currentEquipmentFilter.toLowerCase());
@@ -1248,7 +1280,6 @@ function renderLibrary() {
     countIndicator.innerText = `Showing ${filtered.length} of ${exerciseDB.length} exercises`;
   }
 
-  // Render first 80 for optimal DOM performance
   const displaySlice = filtered.slice(0, 80);
 
   if (displaySlice.length === 0) {
@@ -1316,7 +1347,6 @@ function openExerciseModal(ex) {
   
   updateModalImages(ex);
 
-  // Instructions
   const instrContainer = document.getElementById('modal-instructions');
   instrContainer.innerHTML = '';
   if (ex.instructions && ex.instructions.length > 0) {
@@ -1330,7 +1360,6 @@ function openExerciseModal(ex) {
     instrContainer.innerHTML = '<p style="color:var(--text-muted); font-size:13px;">Follow standard form, control the eccentric motion, and maintain full range of motion.</p>';
   }
 
-  // Personal Records Section
   const historySec = document.getElementById('modal-history-section');
   const pastRecords = getExerciseHistoryLogs(ex.name);
   if (pastRecords.length > 0) {
@@ -1433,27 +1462,28 @@ function renderSwapModalList(query = '') {
 function applyExerciseSelection(selectedExercise) {
   if (!swapTargetContext) return;
 
-  if (typeof swapTargetContext.dayIndex === 'number' && typeof swapTargetContext.exerciseIndex === 'number') {
-    // Swapping in Day Detail
+  if (typeof swapTargetContext.dayIndex === 'number') {
     const day = weeklyPlan[swapTargetContext.dayIndex];
     if (day) {
-      day.exercises[swapTargetContext.exerciseIndex] = selectedExercise.name;
-      day.exerciseDetails[swapTargetContext.exerciseIndex] = selectedExercise;
-      localStorage.setItem('yeahbuddy_weeklyPlan', JSON.stringify(weeklyPlan));
-      openDayDetail(day);
-    }
-  } else if (typeof swapTargetContext.dayIndex === 'number' && swapTargetContext.exerciseIndex === -1) {
-    // Adding new exercise to Day Detail
-    const day = weeklyPlan[swapTargetContext.dayIndex];
-    if (day) {
-      day.exercises.push(selectedExercise.name);
-      day.exerciseDetails.push(selectedExercise);
+      if (typeof swapTargetContext.targetIdx === 'number' && typeof swapTargetContext.exIdx === 'number') {
+        // Swap inside target group
+        if (day.targets && day.targets[swapTargetContext.targetIdx]) {
+          day.targets[swapTargetContext.targetIdx].exercises[swapTargetContext.exIdx] = selectedExercise.name;
+          day.targets[swapTargetContext.targetIdx].exerciseDetails[swapTargetContext.exIdx] = selectedExercise;
+          
+          day.exercises = day.targets.flatMap(t => t.exercises);
+          day.exerciseDetails = day.targets.flatMap(t => t.exerciseDetails);
+        }
+      } else if (swapTargetContext.exerciseIndex === -1) {
+        // Add new exercise to day
+        day.exercises.push(selectedExercise.name);
+        day.exerciseDetails.push(selectedExercise);
+      }
       localStorage.setItem('yeahbuddy_weeklyPlan', JSON.stringify(weeklyPlan));
       openDayDetail(day);
     }
   } else if (typeof swapTargetContext.workoutExerciseIndex === 'number') {
     if (swapTargetContext.workoutExerciseIndex === -1) {
-      // Adding new exercise to live active workout
       activeWorkout.exercises.push({
         name: selectedExercise.name,
         details: selectedExercise,
@@ -1464,7 +1494,6 @@ function applyExerciseSelection(selectedExercise) {
         ]
       });
     } else {
-      // Swapping existing exercise in live active workout
       const exObj = activeWorkout.exercises[swapTargetContext.workoutExerciseIndex];
       exObj.name = selectedExercise.name;
       exObj.details = selectedExercise;
@@ -1481,7 +1510,6 @@ function applyExerciseSelection(selectedExercise) {
 // 9. History & Stats Engine
 // ==========================================
 function renderHistoryTab() {
-  // Aggregate stats
   const totalWorkouts = workoutHistory.length;
   let totalVolume = 0;
   let totalSets = 0;
@@ -1499,10 +1527,8 @@ function renderHistoryTab() {
   if (statVolumeEl) statVolumeEl.innerText = totalVolume.toLocaleString();
   if (statSetsEl) statSetsEl.innerText = totalSets;
 
-  // Render Bodyweight list
   renderWeightHistoryList();
 
-  // Render Completed Workouts list
   const historyContainer = document.getElementById('history-container');
   if (!historyContainer) return;
   historyContainer.innerHTML = '';
@@ -1546,7 +1572,6 @@ function renderHistoryTab() {
     historyContainer.appendChild(card);
   });
 
-  // Attach delete listener
   historyContainer.querySelectorAll('.btn-del-history').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const idx = parseInt(e.target.dataset.idx);
@@ -1584,7 +1609,6 @@ function renderWeightHistoryList() {
 // 10. Event Listeners & Interactions
 // ==========================================
 function setupEventListeners() {
-  // Navigation Tabs
   document.querySelectorAll('.nav-tab').forEach(btn => {
     btn.addEventListener('click', (e) => {
       const tabId = e.currentTarget.dataset.tab;
@@ -1592,13 +1616,11 @@ function setupEventListeners() {
     });
   });
 
-  // Quick Start Workout Button in Header
   const quickStartBtn = document.getElementById('quick-start-workout-btn');
   if (quickStartBtn) {
     quickStartBtn.addEventListener('click', startQuickWorkout);
   }
 
-  // Forms
   forms.onboarding.addEventListener('submit', (e) => {
     e.preventDefault();
     userData = extractFormData(forms.onboarding);
@@ -1616,7 +1638,6 @@ function setupEventListeners() {
 
   forms.split.addEventListener('submit', handleSplitSubmit);
 
-  // Settings: Units & Timer preferences
   const settingUnits = document.getElementById('setting-units');
   if (settingUnits) {
     settingUnits.addEventListener('change', (e) => {
@@ -1643,7 +1664,6 @@ function setupEventListeners() {
     });
   }
 
-  // Backup: JSON Export & Import
   const exportBtn = document.getElementById('export-data-btn');
   if (exportBtn) {
     exportBtn.addEventListener('click', exportBackupData);
@@ -1656,7 +1676,6 @@ function setupEventListeners() {
     importInput.addEventListener('change', handleImportBackupData);
   }
 
-  // Plan tab buttons
   const regenBtn = document.getElementById('regenerate-plan-btn');
   if (regenBtn) regenBtn.addEventListener('click', handleRegenerateNextWeek);
 
@@ -1674,7 +1693,6 @@ function setupEventListeners() {
     });
   }
 
-  // Day detail screen buttons
   const backToDashBtn = document.getElementById('back-to-dashboard');
   if (backToDashBtn) {
     backToDashBtn.addEventListener('click', () => {
@@ -1699,7 +1717,6 @@ function setupEventListeners() {
     });
   }
 
-  // Active workout logger buttons
   const finishWorkoutBtn = document.getElementById('finish-workout-btn');
   if (finishWorkoutBtn) finishWorkoutBtn.addEventListener('click', finishActiveWorkout);
 
@@ -1711,7 +1728,6 @@ function setupEventListeners() {
   const cancelWorkoutBtn = document.getElementById('cancel-workout-btn');
   if (cancelWorkoutBtn) cancelWorkoutBtn.addEventListener('click', cancelActiveWorkout);
 
-  // Floating Rest Timer Controls
   const minus15Btn = document.getElementById('timer-minus-15');
   if (minus15Btn) {
     minus15Btn.addEventListener('click', () => {
@@ -1732,7 +1748,6 @@ function setupEventListeners() {
   const skipTimerBtn = document.getElementById('timer-skip-btn');
   if (skipTimerBtn) skipTimerBtn.addEventListener('click', stopRestTimer);
 
-  // Exercise Library Filters & Search
   const searchInput = document.getElementById('library-search');
   const clearSearchBtn = document.getElementById('clear-search-btn');
   if (searchInput) {
@@ -1752,7 +1767,6 @@ function setupEventListeners() {
     });
   }
 
-  // Muscle filter chips
   document.querySelectorAll('#library-muscle-filters .filter-chip').forEach(btn => {
     btn.addEventListener('click', (e) => {
       document.querySelectorAll('#library-muscle-filters .filter-chip').forEach(b => b.classList.remove('active'));
@@ -1762,7 +1776,6 @@ function setupEventListeners() {
     });
   });
 
-  // Equipment filter chips
   document.querySelectorAll('#library-equipment-filters .filter-chip').forEach(btn => {
     btn.addEventListener('click', (e) => {
       document.querySelectorAll('#library-equipment-filters .filter-chip').forEach(b => b.classList.remove('active'));
@@ -1772,7 +1785,6 @@ function setupEventListeners() {
     });
   });
 
-  // Swap modal search
   const swapSearchInput = document.getElementById('swap-modal-search');
   if (swapSearchInput) {
     swapSearchInput.addEventListener('input', (e) => {
@@ -1780,7 +1792,6 @@ function setupEventListeners() {
     });
   }
 
-  // Weight Logging
   const addWeightBtn = document.getElementById('add-weight-btn');
   if (addWeightBtn) {
     addWeightBtn.addEventListener('click', () => {
@@ -1804,7 +1815,6 @@ function setupEventListeners() {
     });
   }
 
-  // Modals Close handlers
   document.getElementById('close-modal')?.addEventListener('click', () => {
     document.getElementById('exercise-modal').classList.remove('active');
   });
@@ -1820,7 +1830,6 @@ function setupEventListeners() {
     document.getElementById('weight-modal').classList.remove('active');
   });
 
-  // Toggle animation angles in exercise modal
   document.getElementById('modal-toggle-anim-btn')?.addEventListener('click', () => {
     if (currentModalExercise && currentModalExercise.images && currentModalExercise.images.length > 1) {
       currentModalImageIndex++;
@@ -1828,7 +1837,6 @@ function setupEventListeners() {
     }
   });
 
-  // Save Finished Workout button in celebration modal
   document.getElementById('save-finish-workout-btn')?.addEventListener('click', () => {
     const notes = document.getElementById('finish-notes').value;
     if (workoutHistory.length > 0 && notes) {
@@ -1839,7 +1847,6 @@ function setupEventListeners() {
     switchTab('tab-history');
   });
 
-  // Factory Reset App
   document.getElementById('reset-app-btn')?.addEventListener('click', () => {
     if (confirm("Factory Reset App? All workouts, plans, and profiles will be erased.")) {
       localStorage.clear();
@@ -1897,7 +1904,6 @@ function handleImportBackupData(e) {
   reader.readAsText(file);
 }
 
-// Helper: Extract form data
 function extractFormData(form) {
   const fd = new FormData(form);
   const data = {};
@@ -1907,7 +1913,6 @@ function extractFormData(form) {
   return data;
 }
 
-// Helper: Populate form
 function populateForm(form, data) {
   if (!form || !data) return;
   Object.keys(data).forEach(key => {
@@ -1975,5 +1980,4 @@ function setupPullToRefresh() {
   }, { passive: true });
 }
 
-// Start App
 initApp();

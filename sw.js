@@ -1,4 +1,4 @@
-const CACHE_NAME = 'yeahbuddy-v12';
+const CACHE_NAME = 'yeahbuddy-v13';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',
