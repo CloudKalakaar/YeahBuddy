@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>YeahBuddy! Fitness Planner</title>
-  <meta name="description" content="Sleek AI-powered gym workout planner and exercise library.">
+  <title>YeahBuddy! Workout Tracker & Planner</title>
+  <meta name="description" content="Open-source AI-powered workout tracker, routine planner, and exercise library.">
   <link rel="manifest" href="manifest.json">
   <meta name="theme-color" content="#39ff14">
   <link rel="apple-touch-icon" href="icons/icon-192x192.png">
@@ -12,7 +12,7 @@
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
   
   <!-- CSS -->
   <link rel="stylesheet" href="css/style.css">
@@ -20,120 +20,448 @@
 <body>
   <div id="ptr-indicator">Release to refresh</div>
 
-  <div class="container">
-    <header>
+  <!-- App Wrapper -->
+  <div class="app-wrapper">
+    <!-- Header -->
+    <header class="app-header">
       <div class="logo-container">
-        <img src="icons/icon-192x192.png" alt="YeahBuddy Logo">
-        <div class="logo-text">YeahBuddy!</div>
+        <img src="icons/icon-192x192.png" alt="YeahBuddy Logo" class="logo-img">
+        <div class="logo-text">YeahBuddy<span class="logo-accent">!</span></div>
+      </div>
+      <div class="header-actions">
+        <button id="quick-start-workout-btn" class="header-btn" title="Quick Start Empty Workout">
+          <span class="header-btn-icon">+</span>
+          <span class="header-btn-label">Workout</span>
+        </button>
       </div>
     </header>
 
-    <!-- Onboarding Screen -->
-    <main id="onboarding-screen" class="screen">
-      <h2>Let's build your AI Profile</h2>
-      <p>Answer a few questions so our AI understands your body and goals.</p>
+    <!-- Main Screens Container -->
+    <main class="main-content">
       
-      <form id="onboarding-form">
-        <div id="onboarding-questions-container"></div>
-        <button type="submit" class="btn" style="margin-top: 20px;">Continue to Weekly Split</button>
-      </form>
-    </main>
-
-    <!-- Split Setup Screen -->
-    <main id="split-screen" class="screen">
-      <h2>Plan Your Week</h2>
-      <p>Tap all the muscle groups or activities you want to hit on each day for this upcoming week.</p>
-
-      <form id="split-form">
-        <div id="split-days-container">
-          <!-- Dynamically populated chips in JS -->
-        </div>
-        <button type="submit" class="btn" style="margin-top: 20px;">Generate AI Plan</button>
-      </form>
-
-      <div class="loader-container" id="ai-loader">
-        <div class="spinner"></div>
-        <p>AI is crafting your custom workout plan...</p>
-      </div>
-    </main>
-
-    <!-- Dashboard Screen -->
-    <main id="dashboard-screen" class="screen">
-      <div class="tabs">
-        <button class="tab-btn active" data-tab="tab-plan">My Plan</button>
-        <button class="tab-btn" data-tab="tab-library">Exercise Library</button>
-        <button class="tab-btn" data-tab="tab-settings">Settings</button>
-      </div>
-
-      <!-- Plan Tab -->
-      <div id="tab-plan" class="tab-content">
-        <h2>This Week's Plan</h2>
-        <p>Tap a day to view your exercises.</p>
-        <div id="weekly-plan-container">
-          <!-- Dynamically populated -->
+      <!-- ================= 1. ONBOARDING SCREEN ================= -->
+      <section id="onboarding-screen" class="screen">
+        <div class="screen-hero">
+          <div class="hero-badge">AI Fitness Coach</div>
+          <h2>Build Your Profile</h2>
+          <p>Answer a few quick questions so we can generate tailored, biomechanically balanced workout routines.</p>
         </div>
         
-        <div style="margin-top: 25px; display: flex; flex-direction: column; gap: 10px;">
-          <button id="regenerate-plan-btn" class="btn" style="display: flex; align-items: center; justify-content: center; gap: 8px;">
-            ⚡ Generate Next Week's Plan <span style="font-size: 12px; font-weight: normal; opacity: 0.85;">(Same Muscle Split)</span>
-          </button>
-          <button id="change-split-btn" class="btn btn-secondary">✏️ Modify Muscle Split / Days</button>
-          <button id="discard-plan-btn" class="btn btn-secondary" style="border-color: #ff3333; color: #ff3333;">Discard This Week</button>
-        </div>
-      </div>
-
-      <!-- Library Tab -->
-      <div id="tab-library" class="tab-content" style="display: none;">
-        <h2>Exercise Library</h2>
-        <input type="text" id="library-search" class="search-bar" placeholder="Search 200+ exercises...">
-        <div id="library-container">
-          <!-- Dynamically populated -->
-        </div>
-      </div>
-
-      <!-- Settings Tab -->
-      <div id="tab-settings" class="tab-content" style="display: none;">
-        <h2>Profile Settings</h2>
-        <form id="settings-form">
-          <div id="settings-questions-container"></div>
-          <button type="submit" class="btn" style="margin-top: 20px;">Save Profile</button>
+        <form id="onboarding-form" class="card-form">
+          <div id="onboarding-questions-container"></div>
+          <button type="submit" class="btn btn-primary btn-block">Continue to Weekly Split</button>
         </form>
-        <hr style="border: 0; border-bottom: 1px solid var(--surface-light); margin: 30px 0;">
-        <button id="reset-app-btn" class="btn btn-secondary">Factory Reset App</button>
-      </div>
-    </main>
-    
-    <!-- Day Detail Screen -->
-    <main id="day-detail-screen" class="screen">
-      <button class="btn btn-secondary" id="back-to-dashboard" style="margin-bottom: 20px; width: auto; padding: 10px 20px;">← Back</button>
-      <h2 id="day-detail-title">Day X - Type</h2>
-      <div id="day-exercises-container">
-        <!-- Dynamically populated -->
-      </div>
-    </main>
-  </div>
+      </section>
 
-  <!-- Exercise Detail Modal -->
+      <!-- ================= 2. SPLIT CONFIGURATION SCREEN ================= -->
+      <section id="split-screen" class="screen">
+        <div class="screen-hero">
+          <div class="hero-badge">Weekly Schedule</div>
+          <h2>Plan Your Weekly Split</h2>
+          <p>Select muscle targets and exercise counts for each day. Exclude bodyweight if you have full gym equipment.</p>
+        </div>
+
+        <form id="split-form">
+          <div id="split-days-container">
+            <!-- Dynamically populated 7 days -->
+          </div>
+          
+          <div class="sticky-action-bar">
+            <button type="submit" class="btn btn-primary btn-block">
+              <span>⚡ Generate AI Workout Plan</span>
+            </button>
+          </div>
+        </form>
+
+        <div class="loader-container" id="ai-loader">
+          <div class="spinner"></div>
+          <p class="loader-text">AI is crafting your custom workout plan...</p>
+          <span class="loader-sub">Balancing compound presses, pulls, and isolation volume</span>
+        </div>
+      </section>
+
+      <!-- ================= 3. DASHBOARD (MAIN APP) ================= -->
+      <section id="dashboard-screen" class="screen active">
+        
+        <!-- Top Nav Tabs -->
+        <nav class="nav-tabs" role="tablist">
+          <button class="nav-tab active" data-tab="tab-plan" role="tab">
+            <span class="nav-tab-icon">📋</span>
+            <span class="nav-tab-label">Plan</span>
+          </button>
+          <button class="nav-tab" data-tab="tab-active-workout" id="tab-btn-active-workout" role="tab" style="display: none;">
+            <span class="nav-tab-icon live-pulse">⚡</span>
+            <span class="nav-tab-label">Live</span>
+          </button>
+          <button class="nav-tab" data-tab="tab-library" role="tab">
+            <span class="nav-tab-icon">📚</span>
+            <span class="nav-tab-label">Library</span>
+          </button>
+          <button class="nav-tab" data-tab="tab-history" role="tab">
+            <span class="nav-tab-icon">📈</span>
+            <span class="nav-tab-label">History</span>
+          </button>
+          <button class="nav-tab" data-tab="tab-settings" role="tab">
+            <span class="nav-tab-icon">⚙️</span>
+            <span class="nav-tab-label">Settings</span>
+          </button>
+        </nav>
+
+        <!-- --- TAB: PLAN --- -->
+        <div id="tab-plan" class="tab-content active">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">Weekly Routine</h2>
+              <p class="section-subtitle">Tap a day to view exercises or start logging sets</p>
+            </div>
+          </div>
+
+          <div id="weekly-plan-container" class="plan-grid">
+            <!-- Dynamically populated Day Cards -->
+          </div>
+
+          <div class="plan-action-group">
+            <button id="regenerate-plan-btn" class="btn btn-primary btn-block">
+              <span>⚡ Generate Next Week's Plan</span>
+              <span class="btn-subtext">(Same Muscle Split)</span>
+            </button>
+            <div class="btn-row">
+              <button id="change-split-btn" class="btn btn-secondary">✏️ Modify Split</button>
+              <button id="discard-plan-btn" class="btn btn-danger-outline">🗑️ Discard</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- --- TAB: LIVE / ACTIVE WORKOUT LOGGER --- -->
+        <div id="tab-active-workout" class="tab-content" style="display: none;">
+          <div class="active-workout-header">
+            <div class="active-workout-info">
+              <span class="live-tag">● IN PROGRESS</span>
+              <h2 id="active-workout-title">Day Workout</h2>
+            </div>
+            <div class="active-workout-timer" id="active-workout-timer">00:00</div>
+          </div>
+
+          <!-- Workout Controls Bar -->
+          <div class="workout-quick-controls">
+            <button id="finish-workout-btn" class="btn btn-primary btn-sm">✓ Finish Workout</button>
+            <button id="add-exercise-to-workout-btn" class="btn btn-secondary btn-sm">+ Add Exercise</button>
+            <button id="cancel-workout-btn" class="btn btn-danger-outline btn-sm">Discard</button>
+          </div>
+
+          <!-- Exercises & Sets Container -->
+          <div id="active-workout-exercises-container" class="active-exercises-list">
+            <!-- Dynamically populated with set tables -->
+          </div>
+        </div>
+
+        <!-- --- TAB: EXERCISE LIBRARY --- -->
+        <div id="tab-library" class="tab-content" style="display: none;">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">Exercise Database</h2>
+              <p class="section-subtitle">920+ movements with image guides & instructions</p>
+            </div>
+          </div>
+
+          <!-- Search & Filter Controls -->
+          <div class="library-controls">
+            <div class="search-box">
+              <span class="search-icon">🔍</span>
+              <input type="text" id="library-search" class="search-input" placeholder="Search exercises (e.g. Incline Bench, Deadlift, Lat Pulldown)...">
+              <button id="clear-search-btn" class="clear-btn" style="display:none;">&times;</button>
+            </div>
+
+            <!-- Category / Muscle Filters -->
+            <div class="filter-scroll-wrapper">
+              <div class="filter-chips" id="library-muscle-filters">
+                <button class="filter-chip active" data-muscle="all">All Muscles</button>
+                <button class="filter-chip" data-muscle="chest">Chest</button>
+                <button class="filter-chip" data-muscle="back">Back</button>
+                <button class="filter-chip" data-muscle="legs">Legs</button>
+                <button class="filter-chip" data-muscle="shoulders">Shoulders</button>
+                <button class="filter-chip" data-muscle="biceps">Biceps</button>
+                <button class="filter-chip" data-muscle="triceps">Triceps</button>
+                <button class="filter-chip" data-muscle="abdominals">Core</button>
+                <button class="filter-chip" data-muscle="cardio">Cardio</button>
+              </div>
+            </div>
+
+            <!-- Equipment Filters -->
+            <div class="filter-scroll-wrapper">
+              <div class="filter-chips filter-chips-secondary" id="library-equipment-filters">
+                <button class="filter-chip active" data-equipment="all">All Equipment</button>
+                <button class="filter-chip" data-equipment="barbell">Barbell</button>
+                <button class="filter-chip" data-equipment="dumbbell">Dumbbell</button>
+                <button class="filter-chip" data-equipment="cable">Cable</button>
+                <button class="filter-chip" data-equipment="machine">Machine</button>
+                <button class="filter-chip" data-equipment="body only">Bodyweight</button>
+              </div>
+            </div>
+          </div>
+
+          <div id="library-count-indicator" class="library-count">Showing 920 exercises</div>
+          <div id="library-container" class="exercise-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- --- TAB: HISTORY & STATS --- -->
+        <div id="tab-history" class="tab-content" style="display: none;">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">Workout History & Stats</h2>
+              <p class="section-subtitle">Track your consistency, volume, and personal records</p>
+            </div>
+          </div>
+
+          <!-- Quick Stats Summary Cards -->
+          <div class="stats-grid">
+            <div class="stat-card">
+              <div class="stat-value" id="stat-total-workouts">0</div>
+              <div class="stat-label">Workouts</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-total-volume">0</div>
+              <div class="stat-label" id="stat-volume-unit">kg Volume</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-value" id="stat-total-sets">0</div>
+              <div class="stat-label">Sets Logged</div>
+            </div>
+          </div>
+
+          <!-- Bodyweight Tracker Section -->
+          <div class="card-section">
+            <div class="card-section-header">
+              <h3>⚖️ Body Weight Tracker</h3>
+              <button id="add-weight-btn" class="btn btn-secondary btn-xs">+ Log Weight</button>
+            </div>
+            <div id="weight-history-container" class="weight-history-list">
+              <!-- Dynamically populated weight logs -->
+            </div>
+          </div>
+
+          <!-- History Logs List -->
+          <div class="card-section">
+            <div class="card-section-header">
+              <h3>📜 Completed Workouts</h3>
+            </div>
+            <div id="history-container" class="history-list">
+              <!-- Dynamically populated workout cards -->
+            </div>
+          </div>
+        </div>
+
+        <!-- --- TAB: SETTINGS --- -->
+        <div id="tab-settings" class="tab-content" style="display: none;">
+          <div class="section-header">
+            <div>
+              <h2 class="section-title">Settings & Preferences</h2>
+              <p class="section-subtitle">Manage app preferences, units, and data backups</p>
+            </div>
+          </div>
+
+          <!-- Unit & Timer Preferences -->
+          <div class="card-section">
+            <h3>⚙️ App Preferences</h3>
+            <div class="settings-row">
+              <label for="setting-units">Weight Unit</label>
+              <select id="setting-units" class="select-inline">
+                <option value="kg">Kilograms (kg)</option>
+                <option value="lbs">Pounds (lbs)</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <label for="setting-rest-timer">Default Rest Timer</label>
+              <select id="setting-rest-timer" class="select-inline">
+                <option value="30">30 seconds</option>
+                <option value="60">60 seconds</option>
+                <option value="90" selected>90 seconds</option>
+                <option value="120">120 seconds</option>
+                <option value="180">180 seconds</option>
+              </select>
+            </div>
+            <div class="settings-row">
+              <label for="setting-timer-sound">Rest Timer Sound & Vibrate</label>
+              <label class="switch-toggle">
+                <input type="checkbox" id="setting-timer-sound" checked>
+                <span class="switch-slider"></span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Data Backup & Restore -->
+          <div class="card-section">
+            <h3>💾 Data Backup & Restore</h3>
+            <p class="help-text">Your data is stored 100% locally in your browser. Export a JSON backup to keep your workouts safe or transfer devices.</p>
+            <div class="btn-row" style="margin-top: 12px;">
+              <button id="export-data-btn" class="btn btn-secondary">📥 Export Backup (JSON)</button>
+              <button id="import-data-btn" class="btn btn-secondary">📤 Import Backup</button>
+              <input type="file" id="import-file-input" accept=".json" style="display: none;">
+            </div>
+          </div>
+
+          <!-- Profile Questionnaire Form -->
+          <div class="card-section">
+            <h3>👤 Fitness Profile</h3>
+            <form id="settings-form">
+              <div id="settings-questions-container"></div>
+              <button type="submit" class="btn btn-primary btn-block" style="margin-top: 20px;">Save Profile</button>
+            </form>
+          </div>
+
+          <!-- Danger Zone -->
+          <div class="card-section danger-zone">
+            <h3>⚠️ Reset</h3>
+            <p class="help-text">Erase all workouts, history, and profile data to start fresh.</p>
+            <button id="reset-app-btn" class="btn btn-danger-outline btn-block" style="margin-top: 10px;">Factory Reset App</button>
+          </div>
+        </div>
+
+      </section>
+
+      <!-- ================= 4. DAY DETAIL SCREEN ================= -->
+      <section id="day-detail-screen" class="screen">
+        <div class="day-detail-nav">
+          <button class="btn btn-secondary btn-sm" id="back-to-dashboard">← Back to Plan</button>
+          <button class="btn btn-primary btn-sm" id="start-day-workout-btn">▶ Start Workout</button>
+        </div>
+
+        <div class="day-detail-header">
+          <h2 id="day-detail-title">Day 1 - Chest & Triceps</h2>
+          <div class="day-detail-actions">
+            <button id="add-exercise-to-day-btn" class="btn btn-secondary btn-xs">+ Add Exercise</button>
+          </div>
+        </div>
+
+        <div id="day-exercises-container" class="exercise-list">
+          <!-- Dynamically populated with exercise items + swap/delete buttons -->
+        </div>
+      </section>
+
+    </main>
+
+    <!-- Floating Rest Timer Widget (Global) -->
+    <div id="floating-rest-timer" class="floating-rest-timer" style="display: none;">
+      <div class="timer-inner">
+        <div class="timer-visual-ring">
+          <svg viewBox="0 0 36 36" class="circular-chart">
+            <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+            <path id="timer-progress-ring" class="circle-progress" stroke-dasharray="100, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+          </svg>
+          <span class="timer-countdown" id="timer-countdown-text">01:30</span>
+        </div>
+        <div class="timer-info">
+          <div class="timer-title">Rest Timer</div>
+          <div class="timer-controls">
+            <button id="timer-minus-15" class="timer-btn-sub">-15s</button>
+            <button id="timer-plus-15" class="timer-btn-sub">+15s</button>
+            <button id="timer-skip-btn" class="timer-btn-skip">Skip</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div> <!-- /app-wrapper -->
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- 1. Exercise Detail Modal -->
   <div class="modal-overlay" id="exercise-modal">
     <div class="modal-content">
       <button class="close-btn" id="close-modal">&times;</button>
-      <h2 id="modal-title">Exercise Name</h2>
-      <div id="modal-tags" style="margin-bottom: 15px;"></div>
+      <h2 id="modal-title" class="modal-heading">Exercise Name</h2>
+      <div id="modal-tags" class="modal-tags-container"></div>
       
-      <div class="detail-images" id="modal-images">
-        <!-- Dynamically populated -->
+      <div class="modal-image-preview-container">
+        <div class="detail-images" id="modal-images"></div>
+        <button id="modal-toggle-anim-btn" class="btn btn-secondary btn-xs" style="margin-top: 8px;">🔄 Alternate Angles</button>
       </div>
       
-      <h3>Instructions</h3>
-      <div id="modal-instructions" style="margin-top: 10px;">
-        <!-- Dynamically populated -->
+      <div class="modal-section">
+        <h3>Instructions</h3>
+        <div id="modal-instructions" class="instruction-list"></div>
       </div>
+
+      <div class="modal-section" id="modal-history-section" style="display:none;">
+        <h3>Your Personal Records & History</h3>
+        <div id="modal-exercise-history" class="exercise-past-records"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. Swap / Pick Exercise Modal -->
+  <div class="modal-overlay" id="swap-exercise-modal">
+    <div class="modal-content">
+      <button class="close-btn" id="close-swap-modal">&times;</button>
+      <h2 id="swap-modal-title" class="modal-heading">Select Replacement Exercise</h2>
+      
+      <div class="search-box" style="margin-bottom: 12px;">
+        <span class="search-icon">🔍</span>
+        <input type="text" id="swap-modal-search" class="search-input" placeholder="Search replacement...">
+      </div>
+
+      <div id="swap-modal-list" class="exercise-list modal-scroll-list">
+        <!-- Dynamically populated candidate exercises -->
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. Workout Completed Celebration Modal -->
+  <div class="modal-overlay" id="workout-finish-modal">
+    <div class="modal-content modal-celebration">
+      <button class="close-btn" id="close-finish-modal">&times;</button>
+      <div class="celebration-icon">🏆</div>
+      <h2 class="modal-heading">Workout Complete!</h2>
+      <p class="celebration-sub">Yeah Buddy! Light weight baby!</p>
+
+      <div class="summary-stats-box">
+        <div class="summary-stat">
+          <span class="summary-stat-val" id="finish-duration">0 min</span>
+          <span class="summary-stat-lbl">Duration</span>
+        </div>
+        <div class="summary-stat">
+          <span class="summary-stat-val" id="finish-volume">0 kg</span>
+          <span class="summary-stat-lbl">Total Volume</span>
+        </div>
+        <div class="summary-stat">
+          <span class="summary-stat-val" id="finish-sets">0</span>
+          <span class="summary-stat-lbl">Total Sets</span>
+        </div>
+      </div>
+
+      <div class="form-group" style="margin-top: 15px;">
+        <label for="finish-notes">Workout Notes (Optional)</label>
+        <input type="text" id="finish-notes" placeholder="e.g. Felt great, increased bench by 2.5kg">
+      </div>
+
+      <button id="save-finish-workout-btn" class="btn btn-primary btn-block">Save to History</button>
+    </div>
+  </div>
+
+  <!-- 4. Log Weight Modal -->
+  <div class="modal-overlay" id="weight-modal">
+    <div class="modal-content modal-sm">
+      <button class="close-btn" id="close-weight-modal">&times;</button>
+      <h2 class="modal-heading">Log Body Weight</h2>
+      <form id="weight-form" style="margin-top: 15px;">
+        <div class="form-group">
+          <label for="log-weight-val">Weight (<span class="unit-label">kg</span>)</label>
+          <input type="number" id="log-weight-val" step="0.1" min="20" max="400" required placeholder="e.g. 78.5">
+        </div>
+        <div class="form-group">
+          <label for="log-weight-date">Date</label>
+          <input type="date" id="log-weight-date" required>
+        </div>
+        <button type="submit" class="btn btn-primary btn-block">Save Weight</button>
+      </form>
     </div>
   </div>
 
   <!-- Template for 20 Profile Questions -->
   <template id="profile-questions-template">
-    <h3 style="margin: 20px 0 10px; color: var(--primary-color);">Personal Info</h3>
+    <h3 class="form-section-title">Personal Info</h3>
     <div class="form-group"><label>1. Age</label><input type="number" name="user-age" required min="14" max="100" placeholder="e.g. 25"></div>
     <div class="form-group">
       <label>2. Gender</label>
@@ -144,7 +472,7 @@
     <div class="form-group"><label>3. Height (cm)</label><input type="number" name="user-height" required min="100" max="250" placeholder="e.g. 180"></div>
     <div class="form-group"><label>4. Weight (kg)</label><input type="number" name="user-weight" required min="30" max="300" placeholder="e.g. 80"></div>
 
-    <h3 style="margin: 20px 0 10px; color: var(--primary-color);">Fitness Experience & Goals</h3>
+    <h3 class="form-section-title">Fitness Experience & Goals</h3>
     <div class="form-group">
       <label>5. Fitness Goal</label>
       <select name="user-goal" required>
@@ -184,18 +512,18 @@
       </select>
     </div>
 
-    <h3 style="margin: 20px 0 10px; color: var(--primary-color);">Training Preferences</h3>
+    <h3 class="form-section-title">Training Preferences</h3>
     <div class="form-group">
       <label>10. Preferred Workout Duration</label>
       <select name="user-duration" required>
         <option value="30 mins">30 mins</option><option value="45 mins">45 mins</option>
-        <option value="60 mins">60 mins</option><option value="90 mins">90 mins</option>
+        <option value="60 mins" selected>60 mins</option><option value="90 mins">90 mins</option>
       </select>
     </div>
     <div class="form-group">
       <label>11. Available Equipment</label>
       <select name="user-equipment" required>
-        <option value="Full Gym (Machines, Barbells, etc)">Full Gym (Machines, Barbells, Cables, Cardio)</option>
+        <option value="Full Gym (Machines, Barbells, etc)" selected>Full Gym (Machines, Barbells, Cables, Cardio)</option>
         <option value="Dumbbells & Benches only">Dumbbells & Benches only</option>
         <option value="Bodyweight only">Bodyweight only</option><option value="Kettlebells & Bands">Kettlebells & Bands</option>
       </select>
@@ -222,18 +550,18 @@
       </select>
     </div>
 
-    <h3 style="margin: 20px 0 10px; color: var(--primary-color);">Lifestyle & Recovery</h3>
+    <h3 class="form-section-title">Lifestyle & Recovery</h3>
     <div class="form-group">
       <label>15. Average Daily Sleep</label>
       <select name="user-sleep" required>
         <option value="Under 5 hours">Under 5 hours</option><option value="5-6 hours">5-6 hours</option>
-        <option value="7-8 hours">7-8 hours</option><option value="9+ hours">9+ hours</option>
+        <option value="7-8 hours" selected>7-8 hours</option><option value="9+ hours">9+ hours</option>
       </select>
     </div>
     <div class="form-group">
       <label>16. Current Stress Levels</label>
       <select name="user-stress" required>
-        <option value="Low">Low</option><option value="Medium">Medium</option><option value="High">High</option>
+        <option value="Low">Low</option><option value="Medium" selected>Medium</option><option value="High">High</option>
       </select>
     </div>
     <div class="form-group">
@@ -245,11 +573,11 @@
     <div class="form-group">
       <label>18. Daily Hydration</label>
       <select name="user-hydration" required>
-        <option value="Under 1L">Under 1L</option><option value="1-2L">1-2L</option><option value="2-3L">2-3L</option><option value="3L+">3L+</option>
+        <option value="Under 1L">Under 1L</option><option value="1-2L">1-2L</option><option value="2-3L" selected>2-3L</option><option value="3L+">3L+</option>
       </select>
     </div>
 
-    <h3 style="margin: 20px 0 10px; color: var(--primary-color);">Dietary & Nutrition</h3>
+    <h3 class="form-section-title">Dietary & Nutrition</h3>
     <div class="form-group">
       <label>19. Diet Type</label>
       <select name="user-diet" required>
@@ -260,12 +588,13 @@
     <div class="form-group">
       <label>20. Daily Protein Intake</label>
       <select name="user-protein" required>
-        <option value="Low (<80g)">Low (&lt;80g)</option><option value="Moderate (80g - 140g)">Moderate (80g - 140g)</option>
+        <option value="Low (<80g)">Low (&lt;80g)</option><option value="Moderate (80g - 140g)" selected>Moderate (80g - 140g)</option>
         <option value="High (140g+)">High (140g+)</option>
       </select>
     </div>
   </template>
 
+  <!-- Scripts -->
   <script src="js/exercises.js"></script>
   <script src="js/app.js"></script>
 </body>
